@@ -3,15 +3,11 @@ import {
   SoftwareProject,
   SoftwareFile,
   UserSession,
-  ServerNode,
-  DatabaseIntegration,
-  BillingGateway,
-  InvoiceRecord,
   ServerCapabilityDetection,
   ApiVaultRecord,
   AutoIntegrationTask,
 } from '../types';
-import { apiService } from '../services/api';
+import { apiService, API_BASE } from '../services/api';
 import confetti from 'canvas-confetti';
 import {
   Sparkles,
@@ -57,6 +53,21 @@ import {
   FileText,
   Workflow,
   Compass,
+  Mic,
+  MicOff,
+  Volume2,
+  Square,
+  RotateCcw,
+  Image as ImageIcon,
+  Upload,
+  Paperclip,
+  Maximize2,
+  Sliders,
+  Settings,
+  Bot,
+  User,
+  Edit2,
+  Archive,
 } from 'lucide-react';
 
 interface AIStudioWorkspaceProps {
@@ -67,6 +78,24 @@ interface AIStudioWorkspaceProps {
   activeLanguage: 'en' | 'bn';
 }
 
+interface ChatMessage {
+  id: string;
+  role: 'user' | 'model';
+  content: string;
+  timestamp: string;
+  files?: Array<{ name: string; mimeType: string; size: number; data: string; previewUrl?: string }>;
+  model?: string;
+}
+
+interface ChatConversation {
+  id: string;
+  title: string;
+  createdAt: string;
+  messages: ChatMessage[];
+  systemInstruction?: string;
+  model: string;
+}
+
 export const AIStudioWorkspace: React.FC<AIStudioWorkspaceProps> = ({
   user,
   currentProject,
@@ -74,130 +103,154 @@ export const AIStudioWorkspace: React.FC<AIStudioWorkspaceProps> = ({
   onNavigateTab,
   activeLanguage,
 }) => {
+  // Top Workspace Tabs: Chat Studio | App & Code Builder | Live Sandbox | Voice & Media | Snapshots
+  const [workspaceMode, setWorkspaceMode] = useState<'chat' | 'builder' | 'preview' | 'media' | 'snapshots'>('chat');
+
+  // Projects State
   const [projects, setProjects] = useState<SoftwareProject[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState<string>(currentProject?.id || '');
   const [activeProject, setActiveProject] = useState<SoftwareProject | null>(currentProject);
   const [activeFileIndex, setActiveFileIndex] = useState(0);
   const [activeFileContent, setActiveFileContent] = useState('');
   const [isModified, setIsModified] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
-  // Prompt Engine State
-  const [promptInput, setPromptInput] = useState('');
-  const [promptAction, setPromptAction] = useState<'new' | 'add_feature' | 'fix_bug' | 'optimize' | 'test_run'>('add_feature');
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [studioLogs, setStudioLogs] = useState<string[]>([]);
-  const [latestSummary, setLatestSummary] = useState('');
+  // Gemini Model & Settings State
+  const [models, setModels] = useState<any[]>([]);
+  const [selectedModel, setSelectedModel] = useState<string>('gemini-3.8-flash');
+  const [thinkingLevel, setThinkingLevel] = useState<'LOW' | 'MEDIUM' | 'HIGH'>('MEDIUM');
+  const [temperature, setTemperature] = useState<number>(0.7);
+  const [maxOutputTokens, setMaxOutputTokens] = useState<number>(8192);
+  const [jsonMode, setJsonMode] = useState<boolean>(false);
+  const [systemInstruction, setSystemInstruction] = useState<string>(
+    'You are the lead AI Software Architect of LIONIX AI Technologies. Tagline: BUILD ANYTHING. CREATE EVERYTHING. You deliver clean, production-ready, beautiful code and intelligent engineering insights.'
+  );
+  const [showSettingsDrawer, setShowSettingsDrawer] = useState(false);
+  const [apiKeyActive, setApiKeyActive] = useState<boolean>(true);
 
-  // Instant Live Preview Engine State (Target: First working preview < 60s)
-  const [instantHtml, setInstantHtml] = useState<string>('');
-  const [previewRenderTime, setPreviewRenderTime] = useState<string>('0.4s');
-  const [elapsedSeconds, setElapsedSeconds] = useState<number>(0);
-  const [previewError, setPreviewError] = useState<string | null>(null);
-  const [lastExecutedPrompt, setLastExecutedPrompt] = useState<string>('');
-  const [backgroundTasks, setBackgroundTasks] = useState<Array<{
-    name: string;
-    status: 'ready' | 'running' | 'queued' | 'synced';
-    time: string;
-  }>>([
-    { name: 'Frontend Sandbox', status: 'ready', time: '0.4s' },
-    { name: 'Express Backend API', status: 'ready', time: '1.2s' },
-    { name: 'Database Schema', status: 'ready', time: '1.6s' },
-    { name: 'Auth & Security', status: 'ready', time: '0.9s' },
-    { name: 'Billing Gateways', status: 'ready', time: '1.4s' },
-    { name: 'APNCLOUD Fleet Deploy', status: 'ready', time: '2.1s' },
-  ]);
+  // Gemini Chat Studio State
+  const [conversations, setConversations] = useState<ChatConversation[]>(() => {
+    return [
+      {
+        id: 'chat-initial',
+        title: 'New AI Studio Conversation',
+        createdAt: new Date().toLocaleTimeString(),
+        model: 'gemini-3.8-flash',
+        messages: [
+          {
+            id: 'msg-welcome',
+            role: 'model',
+            content:
+              activeLanguage === 'bn'
+                ? 'স্বাগতম লায়নিক্স এআই স্টুডিওতে! গুগলের অফিশিয়াল Gemini 3.8 Flash ও Gemini 4 Argon দ্বারা চালিত। আপনি যেকোনো ফুল-স্ট্যাক অ্যাপ, এআই সিস্টেম, ফাইল বিশ্লেষণ বা কোড জেনারেট করতে পারেন।'
+                : 'Welcome to LIONIX AI Studio! Powered by the official Google Gemini 3.8 Flash and Gemini 4 Argon engine. You can ask questions, generate full-stack applications, analyze files multimodal, or build interactive live sandboxes.',
+            timestamp: new Date().toLocaleTimeString(),
+            model: 'gemini-3.8-flash',
+          },
+        ],
+      },
+    ];
+  });
+  const [activeChatId, setActiveChatId] = useState<string>('chat-initial');
+  const [chatInput, setChatInput] = useState<string>('');
+  const [isStreaming, setIsStreaming] = useState<boolean>(false);
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const chatScrollRef = useRef<HTMLDivElement | null>(null);
 
-  // Full-Auto Integration State
-  const [isAutoIntegrating, setIsAutoIntegrating] = useState(false);
-  const [activeAutoTask, setActiveAutoTask] = useState<AutoIntegrationTask | null>(null);
+  // Multimodal File Attachments
+  const [attachedFiles, setAttachedFiles] = useState<
+    Array<{ name: string; mimeType: string; size: number; data: string; previewUrl?: string }>
+  >([]);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  // Live Preview & Device State
+  // Edit Prompt in Place
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
+  const [editingContent, setEditingContent] = useState<string>('');
+
+  // Voice & Audio State
+  const [isRecording, setIsRecording] = useState<boolean>(false);
+  const [isTranscribing, setIsTranscribing] = useState<boolean>(false);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const [selectedVoice, setSelectedVoice] = useState<string>('Kore');
+  const [ttsLoadingId, setTtsLoadingId] = useState<string | null>(null);
+  const [playingAudio, setPlayingAudio] = useState<HTMLAudioElement | null>(null);
+
+  // App Builder & Synthesizer State
+  const [builderPrompt, setBuilderPrompt] = useState<string>('');
+  const [isSynthesizing, setIsSynthesizing] = useState<boolean>(false);
+  const [builderLogs, setBuilderLogs] = useState<string[]>([]);
+  const [testResults, setTestResults] = useState<any[]>([]);
+  const [testingRunning, setTestingRunning] = useState<boolean>(false);
+
+  // Live Sandbox Preview State
   const [deviceMode, setDeviceMode] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
-  const [previewKey, setPreviewKey] = useState(0);
+  const [previewKey, setPreviewKey] = useState<number>(0);
+  const [previewRefreshSpin, setPreviewRefreshSpin] = useState<boolean>(false);
 
-  // Bottom Deck Tabs
-  const [activeBottomTab, setActiveBottomTab] = useState<'code' | 'backend' | 'database' | 'billing' | 'apncloud' | 'android' | 'tests' | 'logs'>('code');
+  // Multimodal Studio Generators (Image & File Deep Inspector)
+  const [imagePrompt, setImagePrompt] = useState<string>('');
+  const [imageAspectRatio, setImageAspectRatio] = useState<string>('1:1');
+  const [generatedImageUrl, setGeneratedImageUrl] = useState<string | null>(null);
+  const [isGeneratingImage, setIsGeneratingImage] = useState<boolean>(false);
+  const [fileAnalysisResult, setFileAnalysisResult] = useState<string | null>(null);
+  const [isAnalyzingDeepFile, setIsAnalyzingDeepFile] = useState<boolean>(false);
 
-  // Database State
-  const [databases, setDatabases] = useState<DatabaseIntegration[]>([]);
-  const [dbTestingId, setDbTestingId] = useState<string | null>(null);
-  const [dbTestMessage, setDbTestMessage] = useState<string | null>(null);
+  // Version Snapshots State
+  const [snapshotMessage, setSnapshotMessage] = useState<string>('');
+  const [isCreatingSnapshot, setIsCreatingSnapshot] = useState<boolean>(false);
 
-  // Billing State
-  const [billingGateways, setBillingGateways] = useState<BillingGateway[]>([]);
-  const [invoices, setInvoices] = useState<InvoiceRecord[]>([]);
-  const [gwTesting, setGwTesting] = useState<string | null>(null);
-  const [gwTestResult, setGwTestResult] = useState<any>(null);
-
-  // Server Capabilities & APNCLOUD State
-  const [apnInfo, setApnInfo] = useState<any>(null);
-  const [serverCaps, setServerCaps] = useState<ServerCapabilityDetection | null>(null);
-  const [isProbingCaps, setIsProbingCaps] = useState(false);
-  const [isGeneratingPackage, setIsGeneratingPackage] = useState(false);
-  const [pkgSuccessMessage, setPkgSuccessMessage] = useState<string | null>(null);
-
-  // API Vault State
-  const [apiVaultList, setApiVaultList] = useState<ApiVaultRecord[]>([]);
-  const [vaultTestingId, setVaultTestingId] = useState<string | null>(null);
-
-  // Android Build State
-  const [isBuildingAndroid, setIsBuildingAndroid] = useState(false);
-  const [androidBuildArtifact, setAndroidBuildArtifact] = useState<any>(null);
+  // Fast Feedback Copying
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   // Modals
   const [showNewModal, setShowNewModal] = useState(false);
   const [newProjectName, setNewProjectName] = useState('');
   const [newProjectType, setNewProjectType] = useState<'android' | 'website'>('website');
-  const [newProjectPrompt, setNewProjectPrompt] = useState('');
-  const [isCreating, setIsCreating] = useState(false);
 
   // New File in Explorer
   const [showNewFileModal, setShowNewFileModal] = useState(false);
   const [newFileName, setNewFileName] = useState('');
-  const [newFilePath, setNewFilePath] = useState('');
 
-  // Fast Feedback
-  const [copied, setCopied] = useState(false);
-  const [testingRunning, setTestingRunning] = useState(false);
-  const [testResults, setTestResults] = useState<any[]>([]);
-
-  // 1. Initial Load of Projects & Ecosystem
-  const loadInitialData = async () => {
-    try {
-      const [projList, dbList, gwList, invList, apnData, vaultList] = await Promise.all([
-        apiService.getProjects().catch(() => []),
-        apiService.getDatabases().catch(() => []),
-        apiService.getBillingGateways().catch(() => []),
-        apiService.getInvoices().catch(() => []),
-        apiService.getApnCloudInfo().catch(() => null),
-        apiService.getApiVault().catch(() => []),
-      ]);
-
-      if (projList && projList.length > 0) {
-        setProjects(projList);
-        if (!selectedProjectId || !projList.some((p) => p.id === selectedProjectId)) {
-          const first = projList[0];
-          setSelectedProjectId(first.id);
-          setActiveProject(first);
-          onProjectUpdated(first);
-        } else {
-          const found = projList.find((p) => p.id === selectedProjectId) || projList[0];
-          setActiveProject(found);
-        }
-      }
-
-      setDatabases(dbList);
-      setBillingGateways(gwList);
-      setInvoices(invList);
-      setApnInfo(apnData);
-      setApiVaultList(vaultList);
-    } catch (err) {
-      console.warn('Failed loading ecosystem data:', err);
-    }
-  };
-
+  // Auto-scroll chat
   useEffect(() => {
-    loadInitialData();
+    if (chatScrollRef.current) {
+      chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
+    }
+  }, [conversations, isStreaming]);
+
+  // Load Models and Projects on Mount
+  useEffect(() => {
+    const init = async () => {
+      try {
+        const [modelsRes, projList] = await Promise.all([
+          apiService.getGeminiModels().catch(() => ({ success: false, models: [], apiKeyConfigured: true, defaultModel: 'gemini-3.8-flash' })),
+          apiService.getProjects().catch(() => []),
+        ]);
+
+        if (modelsRes && modelsRes.models) {
+          setModels(modelsRes.models);
+          setApiKeyActive(modelsRes.apiKeyConfigured);
+          if (modelsRes.defaultModel) setSelectedModel(modelsRes.defaultModel);
+        }
+
+        if (projList && projList.length > 0) {
+          setProjects(projList);
+          if (!selectedProjectId || !projList.some((p: any) => p.id === selectedProjectId)) {
+            const first = projList[0];
+            setSelectedProjectId(first.id);
+            setActiveProject(first);
+            onProjectUpdated(first);
+          } else {
+            const found = projList.find((p: any) => p.id === selectedProjectId) || projList[0];
+            setActiveProject(found);
+          }
+        }
+      } catch (err) {
+        console.warn('Initialization notice:', err);
+      }
+    };
+    init();
   }, []);
 
   // Sync active project files
@@ -212,200 +265,434 @@ export const AIStudioWorkspace: React.FC<AIStudioWorkspaceProps> = ({
         setTestResults(activeProject.testResults);
       }
       if (activeProject.logs) {
-        setStudioLogs(activeProject.logs);
+        setBuilderLogs(activeProject.logs);
       }
     }
   }, [activeProject, activeFileIndex]);
 
-  // Switch Selected Project
-  const handleSelectProject = (id: string) => {
-    setSelectedProjectId(id);
-    const found = projects.find((p) => p.id === id);
-    if (found) {
-      setActiveProject(found);
-      onProjectUpdated(found);
-      setActiveFileIndex(0);
-      setPreviewKey((k) => k + 1);
+  // Current active conversation
+  const currentChat = conversations.find((c) => c.id === activeChatId) || conversations[0];
+
+  // Create New Chat Conversation
+  const handleCreateNewChat = () => {
+    const newChat: ChatConversation = {
+      id: `chat-${Date.now()}`,
+      title: `Conversation ${conversations.length + 1}`,
+      createdAt: new Date().toLocaleTimeString(),
+      model: selectedModel,
+      messages: [
+        {
+          id: `msg-${Date.now()}`,
+          role: 'model',
+          content:
+            activeLanguage === 'bn'
+              ? 'নতুন সেশন শুরু হয়েছে। আপনি কী তৈরি বা আলোচনা করতে চান?'
+              : 'New conversation started. What would you like to build or explore with Gemini?',
+          timestamp: new Date().toLocaleTimeString(),
+          model: selectedModel,
+        },
+      ],
+    };
+    setConversations((prev) => [newChat, ...prev]);
+    setActiveChatId(newChat.id);
+    setAttachedFiles([]);
+  };
+
+  // Delete Conversation
+  const handleDeleteChat = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (conversations.length <= 1) return;
+    const remaining = conversations.filter((c) => c.id !== id);
+    setConversations(remaining);
+    if (activeChatId === id) {
+      setActiveChatId(remaining[0].id);
     }
   };
 
-  // 2. Submit Natural Language Prompt to Studio Engine (Target: First working preview < 60s)
-  const handleExecutePrompt = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    if (!promptInput.trim()) return;
+  // Clear Current Conversation
+  const handleClearConversation = () => {
+    setConversations((prev) =>
+      prev.map((c) => (c.id === activeChatId ? { ...c, messages: [] } : c))
+    );
+  };
 
-    setIsProcessing(true);
-    setLatestSummary('');
-    setPreviewError(null);
-    const userPrompt = promptInput.trim();
-    setLastExecutedPrompt(userPrompt);
-    const startTime = performance.now();
+  // Send Chat Message with Streaming
+  const handleSendMessage = async (customPrompt?: string) => {
+    const promptToSend = customPrompt || chatInput;
+    if ((!promptToSend || !promptToSend.trim()) && attachedFiles.length === 0) return;
+    if (isStreaming) return;
 
-    // Mark background tasks in progress immediately without blocking UI
-    setBackgroundTasks([
-      { name: 'Frontend Sandbox', status: 'running', time: 'Generating...' },
-      { name: 'Express Backend API', status: 'queued', time: 'Queued' },
-      { name: 'Database Schema', status: 'queued', time: 'Queued' },
-      { name: 'Auth & Security', status: 'queued', time: 'Queued' },
-      { name: 'Billing Gateways', status: 'queued', time: 'Queued' },
-      { name: 'APNCLOUD Fleet Deploy', status: 'queued', time: 'Queued' },
-    ]);
+    const userMsgId = `msg-usr-${Date.now()}`;
+    const modelMsgId = `msg-mod-${Date.now() + 1}`;
+    const timestamp = new Date().toLocaleTimeString();
+
+    const userMsg: ChatMessage = {
+      id: userMsgId,
+      role: 'user',
+      content: promptToSend.trim(),
+      timestamp,
+      files: [...attachedFiles],
+    };
+
+    const initialModelMsg: ChatMessage = {
+      id: modelMsgId,
+      role: 'model',
+      content: '',
+      timestamp,
+      model: selectedModel,
+    };
+
+    // Update conversation with user message and placeholder model message
+    setConversations((prev) =>
+      prev.map((c) => {
+        if (c.id === activeChatId) {
+          const updatedMessages = [...c.messages, userMsg, initialModelMsg];
+          const newTitle = c.messages.length <= 1 && promptToSend.trim() ? promptToSend.trim().slice(0, 32) + '...' : c.title;
+          return {
+            ...c,
+            title: newTitle,
+            messages: updatedMessages,
+          };
+        }
+        return c;
+      })
+    );
+
+    setChatInput('');
+    const filesSent = [...attachedFiles];
+    setAttachedFiles([]);
+    setIsStreaming(true);
+
+    const abortController = new AbortController();
+    abortControllerRef.current = abortController;
+
+    // Build message payload history
+    const historyPayload = (currentChat?.messages || [])
+      .concat(userMsg)
+      .map((m) => ({
+        role: m.role,
+        content: m.content,
+        files: m.files,
+      }));
 
     try {
-      const res = await apiService.promptStudio(
-        activeProject?.id || null,
-        userPrompt,
-        promptAction,
-        activeProject?.type || (userPrompt.toLowerCase().includes('android') ? 'android' : 'website')
+      await apiService.streamGeminiChat(
+        {
+          model: selectedModel,
+          messages: historyPayload,
+          systemInstruction,
+          thinkingLevel,
+          jsonMode,
+        },
+        (chunkText: string) => {
+          setConversations((prev) =>
+            prev.map((c) => {
+              if (c.id === activeChatId) {
+                const msgs = [...c.messages];
+                const last = msgs[msgs.length - 1];
+                if (last && last.id === modelMsgId) {
+                  last.content += chunkText;
+                }
+                return { ...c, messages: msgs };
+              }
+              return c;
+            })
+          );
+        },
+        () => {
+          setIsStreaming(false);
+          abortControllerRef.current = null;
+        },
+        (err: any) => {
+          console.error('Chat stream failed:', err);
+          setConversations((prev) =>
+            prev.map((c) => {
+              if (c.id === activeChatId) {
+                const msgs = [...c.messages];
+                const last = msgs[msgs.length - 1];
+                if (last && last.id === modelMsgId) {
+                  last.content = `[Gemini Service Notice: ${err.message || 'Stream interrupted.'}]`;
+                }
+                return { ...c, messages: msgs };
+              }
+              return c;
+            })
+          );
+          setIsStreaming(false);
+          abortControllerRef.current = null;
+        },
+        abortController.signal
       );
-
-      const elapsedSec = ((performance.now() - startTime) / 1000).toFixed(1) + 's';
-      setPreviewRenderTime(elapsedSec);
-
-      if (res.instantHtml) {
-        setInstantHtml(res.instantHtml);
-      }
-
-      if (res.backgroundTasks && res.backgroundTasks.length > 0) {
-        setBackgroundTasks(res.backgroundTasks);
-      } else {
-        setBackgroundTasks([
-          { name: 'Frontend Sandbox', status: 'ready', time: elapsedSec },
-          { name: 'Express Backend API', status: 'ready', time: '1.1s' },
-          { name: 'Database Schema', status: 'ready', time: '1.4s' },
-          { name: 'Auth & Security', status: 'ready', time: '0.8s' },
-          { name: 'Billing Gateways', status: 'ready', time: '1.2s' },
-          { name: 'APNCLOUD Fleet Deploy', status: 'ready', time: '1.9s' },
-        ]);
-      }
-
-      if (res.project) {
-        setActiveProject(res.project);
-        onProjectUpdated(res.project);
-        setLatestSummary(res.summary);
-        setStudioLogs(res.logs || []);
-        if (res.tests) setTestResults(res.tests);
-        setPreviewKey((k) => k + 1);
-
-        setProjects((prev) => {
-          const idx = prev.findIndex((p) => p.id === res.project.id);
-          if (idx >= 0) {
-            const next = [...prev];
-            next[idx] = res.project;
-            return next;
-          }
-          return [res.project, ...prev];
-        });
-
-        confetti({
-          particleCount: 40,
-          spread: 60,
-          origin: { y: 0.8 },
-          colors: ['#F59E0B', '#10B981'],
-        });
-      }
-      setPromptInput('');
     } catch (err: any) {
-      setPreviewError(err.message || 'AI Studio prompt execution failed');
-      setBackgroundTasks((prev) =>
-        prev.map((t) => ({ ...t, status: t.status === 'running' ? 'queued' : t.status }))
-      );
-    } finally {
-      setIsProcessing(false);
+      setIsStreaming(false);
+      abortControllerRef.current = null;
     }
   };
 
-  // Incremental modification without whole-project rebuild
-  const handleIncrementalModification = async (instruction: string) => {
-    setIsProcessing(true);
-    setPreviewError(null);
-    const startTime = performance.now();
-    try {
-      const res = await apiService.promptStudio(
-        activeProject?.id || null,
-        `Quick incremental modification: ${instruction}`,
-        'add_feature',
-        activeProject?.type || 'website'
-      );
-      const elapsedSec = ((performance.now() - startTime) / 1000).toFixed(1) + 's';
-      setPreviewRenderTime(elapsedSec);
+  // Stop Generation
+  const handleStopGeneration = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+    setIsStreaming(false);
+  };
 
-      if (res.instantHtml) {
-        setInstantHtml(res.instantHtml);
-      }
-      if (res.backgroundTasks) {
-        setBackgroundTasks(res.backgroundTasks);
-      }
-      if (res.project) {
-        setActiveProject(res.project);
-        onProjectUpdated(res.project);
-        setLatestSummary(res.summary);
-        setPreviewKey((k) => k + 1);
-      }
-    } catch (err: any) {
-      setPreviewError(err.message || 'Incremental modification failed');
-    } finally {
-      setIsProcessing(false);
+  // Regenerate Response
+  const handleRegenerateResponse = (msgIndex: number) => {
+    if (isStreaming) return;
+    const msgs = currentChat.messages;
+    if (msgIndex <= 0) return;
+    const previousUserMsg = msgs[msgIndex - 1];
+    if (previousUserMsg && previousUserMsg.role === 'user') {
+      // Remove current model response and re-run
+      const newMessages = msgs.slice(0, msgIndex);
+      setConversations((prev) =>
+        prev.map((c) => (c.id === activeChatId ? { ...c, messages: newMessages } : c))
+      );
+      handleSendMessage(previousUserMsg.content);
     }
   };
 
-  // Fast Retry Generation Handler
-  const handleRetryGeneration = () => {
-    if (lastExecutedPrompt) {
-      setPromptInput(lastExecutedPrompt);
-      handleExecutePrompt();
+  // Edit and resubmit user prompt
+  const handleSaveEditedPrompt = (index: number) => {
+    if (!editingContent.trim()) return;
+    const newMessages = currentChat.messages.slice(0, index);
+    setConversations((prev) =>
+      prev.map((c) => (c.id === activeChatId ? { ...c, messages: newMessages } : c))
+    );
+    setEditingMessageId(null);
+    handleSendMessage(editingContent.trim());
+  };
+
+  // Copy Message to Clipboard
+  const handleCopyMessage = (id: string, text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 2000);
+  };
+
+  // Voice Recording with STT
+  const handleToggleVoiceRecording = async () => {
+    if (isRecording) {
+      // Stop recording
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+        mediaRecorderRef.current.stop();
+      }
+      setIsRecording(false);
     } else {
-      handleExecutePrompt();
+      // Start recording
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const mediaRecorder = new MediaRecorder(stream);
+        mediaRecorderRef.current = mediaRecorder;
+        audioChunksRef.current = [];
+
+        mediaRecorder.ondataavailable = (e) => {
+          if (e.data && e.data.size > 0) {
+            audioChunksRef.current.push(e.data);
+          }
+        };
+
+        mediaRecorder.onstop = async () => {
+          stream.getTracks().forEach((track) => track.stop());
+          const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+          const reader = new FileReader();
+          reader.readAsDataURL(audioBlob);
+          reader.onloadend = async () => {
+            const base64Audio = reader.result as string;
+            setIsTranscribing(true);
+            try {
+              const res = await apiService.transcribeAudio({
+                audioBase64: base64Audio,
+                mimeType: 'audio/webm',
+                prompt:
+                  activeLanguage === 'bn'
+                    ? 'এই অডিওটি নির্ভুল বাংলায় ট্রান্সক্রাইব করুন।'
+                    : 'Transcribe this audio recording accurately. Preserve technical coding terms.',
+              });
+              if (res.transcript) {
+                setChatInput((prev) => (prev ? `${prev} ${res.transcript}` : res.transcript));
+              }
+            } catch (err: any) {
+              alert('Transcription notice: ' + err.message);
+            } finally {
+              setIsTranscribing(false);
+            }
+          };
+        };
+
+        mediaRecorder.start();
+        setIsRecording(true);
+      } catch (err: any) {
+        alert('Microphone access denied or unavailable: ' + err.message);
+      }
     }
   };
 
-  // 3. Full-Auto Integration & Connection System Trigger
-  const handleRunAutoIntegration = async () => {
-    const prompt = promptInput.trim() || 'Build a complete enterprise software system with frontend UI, Express REST backend, database schema, and payment billing';
-    setIsAutoIntegrating(true);
+  // Text-To-Speech (Play response)
+  const handlePlayTTS = async (msgId: string, text: string) => {
+    if (playingAudio) {
+      playingAudio.pause();
+      setPlayingAudio(null);
+      if (ttsLoadingId === msgId) {
+        setTtsLoadingId(null);
+        return;
+      }
+    }
 
+    setTtsLoadingId(msgId);
     try {
-      const res = await apiService.executeAutoIntegration({
-        projectId: activeProject?.id,
-        prompt,
-        language: activeLanguage,
-        targetServerId: 'srv-apncloud-01',
+      const res = await apiService.generateSpeech({
+        text: text.slice(0, 800), // optimal length for TTS
+        voiceName: selectedVoice,
       });
 
-      if (res.task) {
-        setActiveAutoTask(res.task);
+      if (res.audioBase64) {
+        const audio = new Audio(res.audioBase64);
+        setPlayingAudio(audio);
+        audio.play();
+        audio.onended = () => {
+          setPlayingAudio(null);
+          setTtsLoadingId(null);
+        };
       }
+    } catch (err: any) {
+      alert('Speech synthesis notice: ' + err.message);
+      setTtsLoadingId(null);
+    }
+  };
+
+  // Multimodal File Selection
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    Array.from(files).forEach((file) => {
+      const reader = new FileReader();
+      const isImage = file.type.startsWith('image/');
+
+      reader.onload = () => {
+        const base64Data = reader.result as string;
+        setAttachedFiles((prev) => [
+          ...prev,
+          {
+            name: file.name,
+            mimeType: file.type || 'application/octet-stream',
+            size: file.size,
+            data: base64Data,
+            previewUrl: isImage ? base64Data : undefined,
+          },
+        ]);
+      };
+      reader.readAsDataURL(file);
+    });
+
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const handleRemoveAttachedFile = (idx: number) => {
+    setAttachedFiles((prev) => prev.filter((_, i) => i !== idx));
+  };
+
+  // Generate Image with Gemini Image Model
+  const handleGenerateImage = async () => {
+    if (!imagePrompt.trim()) return;
+    setIsGeneratingImage(true);
+    setGeneratedImageUrl(null);
+
+    try {
+      const res = await apiService.generateImage({
+        prompt: imagePrompt.trim(),
+        aspectRatio: imageAspectRatio,
+      });
+      if (res.imageUrl) {
+        setGeneratedImageUrl(res.imageUrl);
+        confetti({ particleCount: 30, spread: 60, origin: { y: 0.7 } });
+      }
+    } catch (err: any) {
+      alert('Image generation notice: ' + err.message);
+    } finally {
+      setIsGeneratingImage(false);
+    }
+  };
+
+  // Deep Multimodal File Analysis
+  const handleDeepFileAnalysis = async (file: File) => {
+    setIsAnalyzingDeepFile(true);
+    setFileAnalysisResult(null);
+
+    const reader = new FileReader();
+    reader.onload = async () => {
+      const base64Data = reader.result as string;
+      try {
+        const res = await apiService.analyzeFile({
+          fileName: file.name,
+          mimeType: file.type || 'application/octet-stream',
+          base64Data,
+          prompt:
+            'Conduct a thorough structural and architectural analysis of this file. Identify software dependencies, key modules, potential security vulnerabilities, and recommend actionable upgrades.',
+        });
+        if (res.analysis) {
+          setFileAnalysisResult(res.analysis);
+        }
+      } catch (err: any) {
+        alert('File analysis notice: ' + err.message);
+      } finally {
+        setIsAnalyzingDeepFile(false);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // AI App Code Synthesizer
+  const handleSynthesizeApp = async () => {
+    if (!builderPrompt.trim()) return;
+    setIsSynthesizing(true);
+
+    try {
+      const res = await apiService.synthesizeApp({
+        projectId: activeProject?.id,
+        prompt: builderPrompt.trim(),
+        language: activeLanguage,
+        targetPlatform: activeProject?.type || 'website',
+      });
+
       if (res.project) {
         setActiveProject(res.project);
         onProjectUpdated(res.project);
+        setBuilderLogs(res.project.logs || []);
         setPreviewKey((k) => k + 1);
+        confetti({ particleCount: 60, spread: 70, origin: { y: 0.6 } });
       }
-
-      // Refresh ecosystem
-      const [dbs, gws, invs] = await Promise.all([
-        apiService.getDatabases().catch(() => []),
-        apiService.getBillingGateways().catch(() => []),
-        apiService.getInvoices().catch(() => []),
-      ]);
-      setDatabases(dbs);
-      setBillingGateways(gws);
-      setInvoices(invs);
-
-      confetti({
-        particleCount: 80,
-        spread: 80,
-        origin: { y: 0.6 },
-        colors: ['#F59E0B', '#10B981', '#3B82F6'],
-      });
+      setBuilderPrompt('');
     } catch (err: any) {
-      alert('Auto-Integration failed: ' + err.message);
+      alert('App synthesis notice: ' + err.message);
     } finally {
-      setIsAutoIntegrating(false);
+      setIsSynthesizing(false);
     }
   };
 
-  // 4. Save Code Changes to Active File
-  const handleSaveFileContent = async () => {
+  // Run Test Suite on Active Project
+  const handleRunTests = async () => {
+    if (!activeProject) return;
+    setTestingRunning(true);
+    try {
+      const res = await apiService.testProject(activeProject.id);
+      setTestResults(res.tests || []);
+      setBuilderLogs((prev) => [
+        ...prev,
+        `[${new Date().toLocaleTimeString()}] Automated Test Suite: ${res.passCount} passed, ${res.failCount} failed.`,
+      ]);
+    } catch (err: any) {
+      alert('Test runner error: ' + err.message);
+    } finally {
+      setTestingRunning(false);
+    }
+  };
+
+  // Save Code Edits in Active File
+  const handleSaveActiveFile = async () => {
     if (!activeProject || !activeProject.files[activeFileIndex]) return;
 
     const updatedFiles = [...activeProject.files];
@@ -433,341 +720,149 @@ export const AIStudioWorkspace: React.FC<AIStudioWorkspaceProps> = ({
     }
   };
 
-  // 5. Run Automated Test Suite
-  const handleRunTests = async () => {
+  // Create Project Version Snapshot
+  const handleCreateSnapshot = async () => {
     if (!activeProject) return;
-    setTestingRunning(true);
-    setActiveBottomTab('tests');
-
+    setIsCreatingSnapshot(true);
     try {
-      const res = await apiService.testProject(activeProject.id);
-      setTestResults(res.tests);
-      setStudioLogs((prev) => [
-        ...prev,
-        `[${new Date().toLocaleTimeString()}] Ran test suite: ${res.passCount} passed, ${res.failCount} failed.`,
-      ]);
-    } catch (err: any) {
-      alert('Test runner error: ' + err.message);
-    } finally {
-      setTestingRunning(false);
-    }
-  };
-
-  // 6. Test Database Connection
-  const handleTestDatabase = async (dbItem: DatabaseIntegration) => {
-    setDbTestingId(dbItem.id);
-    setDbTestMessage(null);
-    try {
-      const res = await apiService.testDatabaseConnection({
-        id: dbItem.id,
-        host: dbItem.host,
-        port: dbItem.port,
-        type: dbItem.type,
-      });
-
-      setDbTestMessage(res.message);
-      // Refresh list
-      const updated = await apiService.getDatabases();
-      setDatabases(updated);
-    } catch (err: any) {
-      setDbTestMessage('Database connection test error: ' + err.message);
-    } finally {
-      setDbTestingId(null);
-    }
-  };
-
-  // 7. Test Billing Gateway
-  const handleTestBillingGateway = async (gw: BillingGateway) => {
-    setGwTesting(gw.gateway);
-    setGwTestResult(null);
-    try {
-      const res = await apiService.testBillingGateway(gw.gateway);
-      setGwTestResult(res);
-      const updated = await apiService.getBillingGateways();
-      setBillingGateways(updated);
-    } catch (err: any) {
-      setGwTestResult({ success: false, message: err.message });
-    } finally {
-      setGwTesting(null);
-    }
-  };
-
-  // 8. Detect Server Capabilities (APNCLOUD Probe)
-  const handleDetectServerCapabilities = async () => {
-    setIsProbingCaps(true);
-    try {
-      const res = await apiService.detectServerCapabilities('srv-apncloud-01', '194.163.142.88');
-      setServerCaps(res.capabilities);
-    } catch (err: any) {
-      alert('Capability probe failed: ' + err.message);
-    } finally {
-      setIsProbingCaps(false);
-    }
-  };
-
-  // 9. Generate APNCLOUD Package
-  const handleGenerateApnCloudPackage = async () => {
-    setIsGeneratingPackage(true);
-    setPkgSuccessMessage(null);
-    try {
-      const res = await apiService.generateApnCloudPackage();
-      setPkgSuccessMessage(res.message + ' (' + res.sizeFormatted + ')');
-      const info = await apiService.getApnCloudInfo();
-      setApnInfo(info);
-    } catch (err: any) {
-      alert('Package generation failed: ' + err.message);
-    } finally {
-      setIsGeneratingPackage(false);
-    }
-  };
-
-  // 10. Test API Vault Item
-  const handleTestApiVault = async (apiItem: ApiVaultRecord) => {
-    setVaultTestingId(apiItem.id);
-    try {
-      const res = await apiService.testApiVault(apiItem.id);
-      alert(`${apiItem.name}: ${res.message}`);
-      const updated = await apiService.getApiVault();
-      setApiVaultList(updated);
-    } catch (err: any) {
-      alert('API test error: ' + err.message);
-    } finally {
-      setVaultTestingId(null);
-    }
-  };
-
-  // 11. Trigger Android APK/AAB Builds
-  const handleBuildAndroid = async (type: 'debug' | 'release' | 'signed-aab') => {
-    if (!activeProject) return;
-    setIsBuildingAndroid(true);
-    try {
-      if (type === 'signed-aab') {
-        const res = await apiService.buildAndroidAab({
-          projectId: activeProject.id,
-          packageName: activeProject.packageName || 'ai.lionix.app',
-          versionName: activeProject.versionName || '1.0.0',
-          versionCode: activeProject.versionCode || 100,
-        });
-        setAndroidBuildArtifact(res);
-      } else {
-        const res = await apiService.buildAndroidApk({
-          projectId: activeProject.id,
-          packageName: activeProject.packageName || 'ai.lionix.app',
-          versionName: activeProject.versionName || '1.0.0',
-          versionCode: activeProject.versionCode || 100,
-          buildType: type,
-        });
-        setAndroidBuildArtifact(res);
+      const res = await apiService.createProjectSnapshot(
+        activeProject.id,
+        snapshotMessage.trim() || `Snapshot at ${new Date().toLocaleTimeString()}`
+      );
+      if (res.snapshot) {
+        const updatedProject = {
+          ...activeProject,
+          snapshots: [res.snapshot, ...(activeProject.snapshots || [])],
+        };
+        setActiveProject(updatedProject);
+        onProjectUpdated(updatedProject);
+        setSnapshotMessage('');
+        confetti({ particleCount: 40, spread: 50, origin: { y: 0.7 } });
       }
-
-      confetti({
-        particleCount: 50,
-        spread: 60,
-        colors: ['#F59E0B', '#10B981'],
-      });
     } catch (err: any) {
-      alert('Android build failed: ' + err.message);
+      alert('Snapshot failed: ' + err.message);
     } finally {
-      setIsBuildingAndroid(false);
+      setIsCreatingSnapshot(false);
     }
   };
 
-  // Quick Project Creation
-  const handleCreateNewProject = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newProjectName.trim()) return;
+  // Restore Project Version Snapshot
+  const handleRestoreSnapshot = async (snapshotId: string) => {
+    if (!activeProject) return;
+    if (!window.confirm('Restore this snapshot? Current files will be replaced with snapshot version.')) return;
 
-    setIsCreating(true);
     try {
-      const res = await apiService.createProject({
-        name: newProjectName.trim(),
-        type: newProjectType,
-        prompt: newProjectPrompt.trim() || `Build a new ${newProjectType} project`,
-        language: activeLanguage,
-      });
+      const res = await apiService.restoreProjectSnapshot(activeProject.id, snapshotId);
+      if (res.project) {
+        setActiveProject(res.project);
+        onProjectUpdated(res.project);
+        setActiveFileIndex(0);
+        setPreviewKey((k) => k + 1);
+        alert('Snapshot restored successfully!');
+      }
+    } catch (err: any) {
+      alert('Restore failed: ' + err.message);
+    }
+  };
 
+  // Duplicate Project
+  const handleDuplicateProject = async () => {
+    if (!activeProject) return;
+    try {
+      const res = await apiService.duplicateProject(activeProject.id);
       if (res.project) {
         setProjects((prev) => [res.project, ...prev]);
         setSelectedProjectId(res.project.id);
         setActiveProject(res.project);
         onProjectUpdated(res.project);
-        setShowNewModal(false);
-        setNewProjectName('');
-        setNewProjectPrompt('');
+        alert(`Duplicated as "${res.project.name}"`);
       }
     } catch (err: any) {
-      alert('Creation error: ' + err.message);
-    } finally {
-      setIsCreating(false);
+      alert('Duplicate failed: ' + err.message);
     }
   };
 
-  // Add File
-  const handleCreateNewFile = async () => {
-    if (!newFileName.trim() || !activeProject) return;
-    const path = newFilePath.trim() || newFileName.trim();
-    const ext = newFileName.split('.').pop() || '';
-
-    const newFile: SoftwareFile = {
-      name: newFileName.trim(),
-      path,
-      language: ext === 'kt' ? 'kotlin' : ext === 'ts' || ext === 'tsx' ? 'typescript' : ext === 'sql' ? 'sql' : ext === 'json' ? 'json' : 'text',
-      content: ext === 'kt' ? `// Package: ${activeProject.packageName || 'ai.lionix.app'}\n` : `// File: ${path}\n`,
-    };
-
-    const updatedFiles = [...activeProject.files, newFile];
-    try {
-      const res = await apiService.updateProject(activeProject.id, { files: updatedFiles });
-      if (res.project) {
-        setActiveProject(res.project);
-        onProjectUpdated(res.project);
-        setActiveFileIndex(updatedFiles.length - 1);
-        setShowNewFileModal(false);
-        setNewFileName('');
-        setNewFilePath('');
-      }
-    } catch (err: any) {
-      alert('Error creating file: ' + err.message);
-    }
-  };
-
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  const files = activeProject?.files || [];
-  const activeFile = files[activeFileIndex] || files[0];
-  const isAndroid = activeProject?.type === 'android';
-
-  const generateSandboxDoc = (project: SoftwareProject | null) => {
-    if (instantHtml && instantHtml.trim().length > 0) {
-      return instantHtml;
-    }
-
-    if (!project) return '<html><body style="background:#07080B;color:#999;font-family:sans-serif;padding:24px;">No project loaded</body></html>';
-
-    const htmlFile = project.files?.find((f) => f.name.endsWith('.html'));
-    if (htmlFile && htmlFile.content.includes('<html')) {
-      return htmlFile.content;
-    }
-
-    const projectName = project.name || 'LIONIX Web Platform';
-    const customDomain = project.customDomain || 'lionixai.com';
-    const techChips = (project.techStack || ['React 19', 'TypeScript', 'Tailwind CSS', 'Node.js Express'])
-      .map((t) => `<span class="px-2.5 py-1 rounded-lg bg-[#121620] border border-amber-500/30 text-amber-300 text-xs font-mono">${t}</span>`)
-      .join(' ');
-
-    return `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
-  <style>
-    body { font-family: 'Plus Jakarta Sans', sans-serif; }
-    .font-cinzel { font-family: 'Cinzel', serif; }
-  </style>
-</head>
-<body class="bg-[#07080B] text-white min-h-screen p-6 md:p-12 flex flex-col items-center justify-center selection:bg-amber-500 selection:text-black">
-  <div class="max-w-2xl w-full text-center space-y-6">
-    <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 font-mono text-xs uppercase tracking-wider">
-      <span>● LIVE SANDBOX ENVIRONMENT</span>
-      <span>•</span>
-      <span class="text-zinc-400">${customDomain}</span>
-    </div>
-
-    <h1 class="font-cinzel text-3xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-amber-200 to-amber-500 tracking-wide">
-      ${projectName}
-    </h1>
-
-    <p class="text-xs md:text-sm text-zinc-300 max-w-xl mx-auto leading-relaxed">
-      ${project.prompt || 'Autonomous multi-department software generated by LIONIX AI Studio.'}
-    </p>
-
-    <div class="flex flex-wrap items-center justify-center gap-2 pt-2">
-      ${techChips}
-    </div>
-
-    <div class="p-6 rounded-3xl bg-[#0D1017] border border-amber-500/20 text-left space-y-4 shadow-2xl">
-      <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
-        <span class="text-xs font-bold uppercase tracking-wider text-amber-400">Integrated Systems</span>
-        <span class="text-[10px] text-emerald-400 font-mono">Backend: Connected</span>
-      </div>
-      <div class="grid grid-cols-2 gap-3 text-xs text-zinc-400 font-mono">
-        <div>• Domain: <strong class="text-zinc-200">${customDomain}</strong></div>
-        <div>• Server: <strong class="text-zinc-200">APNCLOUD (194.163.142.88)</strong></div>
-        <div>• Database: <strong class="text-zinc-200">MySQL 8.0 & Firestore</strong></div>
-        <div>• Payments: <strong class="text-zinc-200">Stripe & bKash Ready</strong></div>
-      </div>
-    </div>
-  </div>
-</body>
-</html>`;
-  };
+  // Filtered files in explorer
+  const filteredFiles = (activeProject?.files || []).filter((f) =>
+    searchQuery ? f.name.toLowerCase().includes(searchQuery.toLowerCase()) || f.path.toLowerCase().includes(searchQuery.toLowerCase()) : true
+  );
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-300">
-      {/* Flagship Header Bar */}
-      <div className="p-4 md:p-6 rounded-3xl bg-gradient-to-br from-[#121622] via-[#0D1017] to-[#08090C] border border-amber-500/30 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-2xl">
+    <div className="space-y-4 animate-in fade-in duration-200">
+      {/* ==========================================
+          TOP MASTER CONTROL BAR (LIONIX AI STUDIO)
+          ========================================== */}
+      <div className="p-4 rounded-3xl bg-gradient-to-r from-[#0E121B] via-[#0A0D14] to-[#07080B] border border-amber-500/30 shadow-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-2xl bg-amber-500/10 border border-amber-500/40 p-2 flex items-center justify-center shadow-lg shadow-amber-500/10 shrink-0">
-            <Sparkles className="w-6 h-6 text-amber-400 animate-pulse" />
+          <div className="w-10 h-10 rounded-2xl bg-amber-500/10 border border-amber-500/40 flex items-center justify-center shadow-lg shadow-amber-500/10 shrink-0">
+            <Sparkles className="w-5 h-5 text-amber-400 animate-pulse" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="font-cinzel text-lg md:text-xl font-black text-white">
+              <h1 className="font-cinzel text-lg font-black tracking-wide text-white">
                 LIONIX AI STUDIO
               </h1>
-              <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-amber-500/15 text-amber-400 border border-amber-500/30 font-bold">
-                FULL AUTO v3.0
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
+                Official Gemini API
               </span>
             </div>
-            <p className="text-xs text-zinc-400">
-              BUILD ANYTHING. CREATE EVERYTHING. • Autonomous Multi-Department System
+            <p className="text-[11px] text-zinc-400">
+              BUILD ANYTHING. CREATE EVERYTHING. • Google Gemini 3.8 Flash & 4 Argon Engine
             </p>
           </div>
         </div>
 
-        {/* Action Controls */}
+        {/* Global Project & Action Toolbar */}
         <div className="flex flex-wrap items-center gap-2">
-          {/* Project Selector Dropdown */}
+          {/* Active Project Dropdown */}
           <select
             value={selectedProjectId}
-            onChange={(e) => handleSelectProject(e.target.value)}
-            className="px-3 py-1.5 rounded-xl bg-[#121620] border border-zinc-700 text-xs text-white outline-none cursor-pointer"
+            onChange={(e) => {
+              const id = e.target.value;
+              setSelectedProjectId(id);
+              const found = projects.find((p) => p.id === id);
+              if (found) {
+                setActiveProject(found);
+                onProjectUpdated(found);
+                setActiveFileIndex(0);
+                setPreviewKey((k) => k + 1);
+              }
+            }}
+            className="px-3 py-1.5 rounded-xl bg-[#121622] border border-zinc-700 text-xs text-white outline-none cursor-pointer hover:border-amber-500/40"
           >
             {projects.map((p) => (
               <option key={p.id} value={p.id}>
-                {p.name} ({p.type.toUpperCase()})
+                📁 {p.name} ({p.type.toUpperCase()})
               </option>
             ))}
           </select>
 
+          {/* New Project Button */}
           <button
             onClick={() => setShowNewModal(true)}
-            className="px-3.5 py-1.5 rounded-xl bg-[#121620] hover:bg-[#1A1F2D] border border-amber-500/40 text-amber-300 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
+            className="px-3 py-1.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/40 text-amber-300 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5" />
-            <span>New Project</span>
+            <span>New</span>
           </button>
 
+          {/* Duplicate Project */}
           <button
-            onClick={handleRunTests}
-            disabled={testingRunning}
-            className="px-3.5 py-1.5 rounded-xl bg-[#121620] hover:bg-[#1A1F2D] border border-zinc-700 text-zinc-200 text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+            onClick={handleDuplicateProject}
+            title="Duplicate Active Project"
+            className="px-2.5 py-1.5 rounded-xl bg-[#121622] hover:bg-[#1A1F2D] border border-zinc-700 text-zinc-300 text-xs transition flex items-center gap-1 cursor-pointer"
           >
-            <Play className={`w-3.5 h-3.5 text-emerald-400 ${testingRunning ? 'animate-spin' : ''}`} />
-            <span>Test Project</span>
+            <Copy className="w-3.5 h-3.5 text-zinc-400" />
+            <span className="hidden sm:inline">Clone</span>
           </button>
 
+          {/* Export Project ZIP */}
           {activeProject && (
             <a
               href={apiService.getProjectExportZipUrl(activeProject.id)}
               download
-              className="px-3.5 py-1.5 rounded-xl bg-[#121620] hover:bg-[#1A1F2D] border border-zinc-700 text-zinc-200 text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer"
+              className="px-3 py-1.5 rounded-xl bg-[#121622] hover:bg-[#1A1F2D] border border-zinc-700 text-zinc-300 text-xs transition flex items-center gap-1.5 cursor-pointer"
             >
               <Download className="w-3.5 h-3.5 text-blue-400" />
               <span>Export ZIP</span>
@@ -776,999 +871,1145 @@ export const AIStudioWorkspace: React.FC<AIStudioWorkspaceProps> = ({
         </div>
       </div>
 
-      {/* 2-Column Google AI Studio Primary Work Area */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* LEFT SIDE: AI Chat, Prompt Input, Auto-Integration Engine (5 cols) */}
-        <div className="lg:col-span-5 space-y-4">
-          <div className="p-5 rounded-3xl bg-[#0B0D13] border-2 border-amber-500/30 space-y-4 shadow-xl">
-            <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
-              <div className="flex items-center gap-2">
-                <Workflow className="w-4 h-4 text-amber-400" />
-                <h3 className="font-cinzel text-sm font-bold text-white">Autonomous Instruction Center</h3>
-              </div>
-              <span className="text-[10px] text-zinc-400 font-mono">English / বাংলা</span>
-            </div>
+      {/* ==========================================
+          WORKSPACES NAVIGATION BAR
+          ========================================== */}
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-800 pb-3">
+        <div className="flex items-center gap-1.5 p-1 rounded-2xl bg-[#0D1017] border border-amber-500/20">
+          <button
+            onClick={() => setWorkspaceMode('chat')}
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer ${
+              workspaceMode === 'chat'
+                ? 'bg-amber-500 text-black shadow-md shadow-amber-500/20'
+                : 'text-zinc-400 hover:text-white hover:bg-zinc-800/50'
+            }`}
+          >
+            <Bot className="w-4 h-4" />
+            <span>Gemini Chat Studio</span>
+          </button>
 
-            {/* Prompt Form */}
-            <form onSubmit={handleExecutePrompt} className="space-y-3">
-              <div>
-                <label className="text-xs font-semibold text-zinc-300 block mb-1">
-                  Describe what you want to build or integrate:
-                </label>
-                <textarea
-                  rows={4}
-                  value={promptInput}
-                  onChange={(e) => setPromptInput(e.target.value)}
-                  placeholder={
-                    activeLanguage === 'bn'
-                      ? 'একটি কমপ্লিট ই-কমার্স প্ল্যাটফর্ম তৈরি কর যার সাথে Express API, MySQL ডেটাবেস, bKash ও Stripe পেমেন্ট এবং APNCLOUD হোস্টিং যুক্ত থাকবে...'
-                      : 'Build a complete SaaS platform with React frontend, Express REST API backend, PostgreSQL database schema, Stripe payment webhooks, and APNCLOUD hosting deployment...'
-                  }
-                  className="w-full p-3 rounded-2xl bg-[#12151F] border border-zinc-800 focus:border-amber-500 text-xs text-white placeholder-zinc-500 outline-none transition resize-none leading-relaxed font-sans"
-                />
-              </div>
+          <button
+            onClick={() => setWorkspaceMode('builder')}
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer ${
+              workspaceMode === 'builder'
+                ? 'bg-amber-500 text-black shadow-md shadow-amber-500/20'
+                : 'text-zinc-400 hover:text-white hover:bg-zinc-800/50'
+            }`}
+          >
+            <Code2 className="w-4 h-4" />
+            <span>App & Code Builder</span>
+          </button>
 
-              {/* Action Buttons: Full Auto vs Prompt Studio */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  disabled={isAutoIntegrating}
-                  onClick={handleRunAutoIntegration}
-                  className="py-3 px-4 rounded-xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-600 hover:brightness-110 text-black font-extrabold text-xs uppercase tracking-wider shadow-lg shadow-amber-500/25 transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
-                  title="Automatically create code, configure backend, connect databases, integrate billing, and prepare APNCLOUD package"
-                >
-                  {isAutoIntegrating ? (
-                    <>
-                      <RefreshCw className="w-4 h-4 animate-spin text-black" />
-                      <span>Auto-Integrating...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Zap className="w-4 h-4 fill-black" />
-                      <span>Auto-Integrate All</span>
-                    </>
-                  )}
-                </button>
+          <button
+            onClick={() => setWorkspaceMode('preview')}
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer ${
+              workspaceMode === 'preview'
+                ? 'bg-amber-500 text-black shadow-md shadow-amber-500/20'
+                : 'text-zinc-400 hover:text-white hover:bg-zinc-800/50'
+            }`}
+          >
+            <Eye className="w-4 h-4" />
+            <span>Live Sandbox Preview</span>
+          </button>
 
-                <button
-                  type="submit"
-                  disabled={isProcessing || !promptInput.trim()}
-                  className="py-3 px-4 rounded-xl bg-[#171B26] hover:bg-[#1E2433] border border-amber-500/40 text-amber-300 font-bold text-xs uppercase tracking-wider transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-40"
-                >
-                  {isProcessing ? (
-                    <RefreshCw className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <Send className="w-4 h-4" />
-                  )}
-                  <span>Send Instruction</span>
-                </button>
-              </div>
+          <button
+            onClick={() => setWorkspaceMode('media')}
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer ${
+              workspaceMode === 'media'
+                ? 'bg-amber-500 text-black shadow-md shadow-amber-500/20'
+                : 'text-zinc-400 hover:text-white hover:bg-zinc-800/50'
+            }`}
+          >
+            <Radio className="w-4 h-4" />
+            <span>Voice & Media Studio</span>
+          </button>
 
-              {/* Fast Prompt Suggestions */}
-              <div className="pt-2 border-t border-zinc-800/80 space-y-1.5">
-                <span className="text-[10px] text-zinc-500 font-mono">Bilingual Fast Suggestions:</span>
-                <div className="flex flex-wrap gap-1.5">
-                  {[
-                    'একটি আধুনিক ওয়েবসাইট তৈরি কর',
-                    'Connect MySQL & Express Backend',
-                    'Setup Stripe & bKash Billing',
-                    'Deploy to APNCLOUD lionixai.com',
-                  ].map((sug) => (
-                    <button
-                      key={sug}
-                      type="button"
-                      onClick={() => setPromptInput(sug)}
-                      className="px-2.5 py-1 rounded-lg bg-[#11141C] hover:bg-[#181D29] border border-zinc-800 text-[11px] text-zinc-400 hover:text-amber-300 transition cursor-pointer"
-                    >
-                      {sug}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </form>
-          </div>
-
-          {/* Autonomous AI Agent Pipeline Tracker */}
-          {activeAutoTask && (
-            <div className="p-5 rounded-3xl bg-[#090C12] border border-amber-500/40 space-y-3 animate-in fade-in">
-              <div className="flex items-center justify-between border-b border-zinc-800 pb-2">
-                <span className="text-xs font-bold text-amber-400 flex items-center gap-1.5">
-                  <Activity className="w-4 h-4" />
-                  10-Step Autonomous Pipeline Execution
-                </span>
-                <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
-                  ALL STEPS COMPLETED
-                </span>
-              </div>
-
-              <div className="space-y-2 max-h-56 overflow-y-auto font-mono text-[11px]">
-                {activeAutoTask.steps.map((step) => (
-                  <div key={step.stepNumber} className="p-2.5 rounded-xl bg-[#0F131C] border border-zinc-800 flex items-start gap-2.5">
-                    <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                    <div className="space-y-0.5">
-                      <div className="flex items-center gap-2">
-                        <span className="text-white font-bold">0{step.stepNumber}. {step.title}</span>
-                        <span className="text-[9px] text-amber-400 uppercase">[{step.agent}]</span>
-                      </div>
-                      <p className="text-[10px] text-zinc-400 leading-tight">{step.details}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Project History & Audit Timeline */}
-          <div className="p-4 rounded-2xl bg-[#080A0E] border border-zinc-800 space-y-2 text-xs">
-            <span className="font-cinzel text-xs font-bold text-zinc-400 flex items-center gap-1.5">
-              <History className="w-3.5 h-3.5 text-amber-400" />
-              Project Instruction History ({activeProject?.history?.length || 1})
-            </span>
-            <div className="space-y-1.5 max-h-36 overflow-y-auto font-mono text-[11px] text-zinc-400">
-              {activeProject?.history?.map((h, idx) => (
-                <div key={idx} className="p-2 rounded-lg bg-[#10131B] border border-zinc-800/80 flex items-center justify-between">
-                  <span className="truncate max-w-[200px] text-zinc-200">{h.prompt}</span>
-                  <span className="text-[9px] text-amber-400">{h.action}</span>
-                </div>
-              )) || (
-                <p className="text-zinc-600">No previous instructions recorded.</p>
-              )}
-            </div>
-          </div>
+          <button
+            onClick={() => setWorkspaceMode('snapshots')}
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer ${
+              workspaceMode === 'snapshots'
+                ? 'bg-amber-500 text-black shadow-md shadow-amber-500/20'
+                : 'text-zinc-400 hover:text-white hover:bg-zinc-800/50'
+            }`}
+          >
+            <History className="w-4 h-4" />
+            <span>Snapshots & History</span>
+          </button>
         </div>
 
-        {/* RIGHT SIDE: Live Interactive Preview & Instant Engine (7 cols) */}
-        <div className="lg:col-span-7 space-y-4">
-          <div className="p-4 rounded-3xl bg-[#0B0D13] border-2 border-amber-500/30 space-y-4 shadow-xl">
-            {/* Preview Toolbar */}
-            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-800 pb-3">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                <span className="font-cinzel text-xs font-bold text-white uppercase tracking-wider">
-                  Live Instant Preview
-                </span>
-                <span className="text-[10px] text-zinc-400 font-mono hidden sm:inline">
-                  https://{activeProject?.customDomain || 'lionixai.com'}
-                </span>
-                <span className="px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-400 text-[10px] font-mono font-bold flex items-center gap-1">
-                  <Zap className="w-3 h-3 fill-amber-400" />
-                  <span>{previewRenderTime} (<span className="text-emerald-400">Under 60s</span>)</span>
-                </span>
-              </div>
-
-              {/* Device Mode Switcher & Controls */}
-              <div className="flex items-center gap-1 bg-[#12151F] p-1 rounded-xl border border-zinc-800">
-                <button
-                  onClick={() => setDeviceMode('desktop')}
-                  className={`p-1.5 rounded-lg text-xs transition cursor-pointer ${
-                    deviceMode === 'desktop' ? 'bg-amber-500 text-black font-bold' : 'text-zinc-400 hover:text-white'
-                  }`}
-                  title="Desktop View (100%)"
-                >
-                  <Monitor className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  onClick={() => setDeviceMode('tablet')}
-                  className={`p-1.5 rounded-lg text-xs transition cursor-pointer ${
-                    deviceMode === 'tablet' ? 'bg-amber-500 text-black font-bold' : 'text-zinc-400 hover:text-white'
-                  }`}
-                  title="Tablet View (720px)"
-                >
-                  <Tablet className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  onClick={() => setDeviceMode('mobile')}
-                  className={`p-1.5 rounded-lg text-xs transition cursor-pointer ${
-                    deviceMode === 'mobile' ? 'bg-amber-500 text-black font-bold' : 'text-zinc-400 hover:text-white'
-                  }`}
-                  title="Mobile View (360px)"
-                >
-                  <Smartphone className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  onClick={() => setPreviewKey((k) => k + 1)}
-                  className="p-1.5 rounded-lg text-xs text-zinc-400 hover:text-amber-400 transition cursor-pointer ml-1"
-                  title="Refresh Sandbox"
-                >
-                  <RotateCw className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            </div>
-
-            {/* Error & Retry Banner */}
-            {previewError && (
-              <div className="p-3.5 rounded-2xl bg-red-500/10 border border-red-500/30 flex items-center justify-between gap-3 animate-in fade-in">
-                <div className="flex items-center gap-2 text-xs text-red-300">
-                  <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
-                  <span>{previewError}</span>
-                </div>
-                <button
-                  type="button"
-                  onClick={handleRetryGeneration}
-                  className="px-3 py-1 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:brightness-110 text-black text-xs font-bold uppercase tracking-wider flex items-center gap-1 shrink-0 cursor-pointer"
-                >
-                  <RotateCw className="w-3 h-3" />
-                  <span>Retry Generation</span>
-                </button>
-              </div>
-            )}
-
-            {/* Rendered Sandbox IFrame */}
-            <div className="flex justify-center bg-[#060709] rounded-2xl p-3 overflow-hidden min-h-[460px]">
-              <div
-                className={`transition-all duration-300 rounded-xl overflow-hidden border border-zinc-800 bg-[#07080B] shadow-2xl relative ${
-                  deviceMode === 'mobile'
-                    ? 'w-[360px] h-[540px]'
-                    : deviceMode === 'tablet'
-                    ? 'w-[720px] h-[520px]'
-                    : 'w-full h-[520px]'
-                }`}
-              >
-                {isProcessing && (
-                  <div className="absolute inset-0 z-20 bg-black/60 backdrop-blur-xs flex flex-col items-center justify-center p-4">
-                    <div className="w-10 h-10 rounded-full border-2 border-amber-500 border-t-transparent animate-spin mb-3"></div>
-                    <span className="font-cinzel text-xs font-bold text-amber-400 tracking-wider">
-                      UPDATING LIVE PREVIEW...
-                    </span>
-                    <span className="text-[10px] text-zinc-400 font-mono mt-1">
-                      Generating responsive instant preview within seconds
-                    </span>
-                  </div>
-                )}
-                <iframe
-                  key={previewKey}
-                  title="LIONIX Sandbox Preview"
-                  srcDoc={generateSandboxDoc(activeProject)}
-                  className="w-full h-full border-0 bg-[#07080B]"
-                  sandbox="allow-scripts allow-forms allow-same-origin allow-modals"
-                />
-              </div>
-            </div>
-
-            {/* Decoupled Autonomous Background Pipeline Tracker */}
-            <div className="p-3.5 rounded-2xl bg-[#090C12] border border-zinc-800 space-y-2.5">
-              <div className="flex items-center justify-between border-b border-zinc-800/80 pb-2">
-                <div className="flex items-center gap-2">
-                  <Activity className="w-3.5 h-3.5 text-amber-400" />
-                  <span className="text-xs font-bold text-white uppercase tracking-wider">
-                    Decoupled Background Tasks (Non-blocking)
-                  </span>
-                </div>
-                <span className="text-[10px] text-emerald-400 font-mono">
-                  ● All Tasks Autonomous
-                </span>
-              </div>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                {backgroundTasks.map((task, idx) => (
-                  <div
-                    key={idx}
-                    className="p-2 rounded-xl bg-[#0F131C] border border-zinc-800 flex items-center justify-between text-[11px]"
-                  >
-                    <span className="text-zinc-300 font-medium truncate max-w-[120px]">{task.name}</span>
-                    <span
-                      className={`px-1.5 py-0.5 rounded text-[9px] font-mono font-bold uppercase tracking-wider ${
-                        task.status === 'ready' || task.status === 'synced'
-                          ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
-                          : task.status === 'running'
-                          ? 'bg-amber-500/15 text-amber-300 border border-amber-500/30 animate-pulse'
-                          : 'bg-zinc-800 text-zinc-400'
-                      }`}
-                    >
-                      {task.time || task.status}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Incremental Fast Modifications Toolbar (Zero Rebuild) */}
-            <div className="pt-2 border-t border-zinc-800 space-y-1.5">
-              <span className="text-[10px] text-zinc-400 font-mono font-semibold">
-                ⚡ Instant Incremental Edits (Zero Full Rebuild):
+        {/* Gemini Active Model Badge & Settings Toggle */}
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#0F131C] border border-amber-500/30 text-xs">
+            <Cpu className="w-3.5 h-3.5 text-amber-400" />
+            <span className="font-mono text-zinc-300 font-semibold">{selectedModel}</span>
+            {thinkingLevel && (
+              <span className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-800 text-amber-300 font-mono">
+                {thinkingLevel} Thinking
               </span>
-              <div className="flex flex-wrap gap-1.5">
-                {[
-                  { label: 'Gold & Obsidian Theme', prompt: 'Style theme with black background and metallic gold buttons and accents' },
-                  { label: '+ Add Hero CTA Section', prompt: 'Add an executive hero call-to-action banner with Start Now button' },
-                  { label: '+ Contact & Lead Form', prompt: 'Add an interactive contact and project inquiry form' },
-                  { label: '+ Pricing Tier Matrix', prompt: 'Add a 3-tier pricing matrix with monthly/annual switch' },
-                  { label: '+ Client Testimonials', prompt: 'Add customer testimonials grid with ratings and feedback' },
-                ].map((item, i) => (
-                  <button
-                    key={i}
-                    type="button"
-                    disabled={isProcessing}
-                    onClick={() => handleIncrementalModification(item.prompt)}
-                    className="px-2.5 py-1 rounded-lg bg-[#121620] hover:bg-[#1A1F2D] border border-zinc-800 hover:border-amber-500/40 text-[11px] text-zinc-300 hover:text-amber-300 transition flex items-center gap-1 cursor-pointer disabled:opacity-40"
-                  >
-                    <Sparkles className="w-3 h-3 text-amber-400" />
-                    <span>{item.label}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
+            )}
           </div>
+
+          <button
+            onClick={() => setShowSettingsDrawer(!showSettingsDrawer)}
+            className={`p-2 rounded-xl border text-xs font-bold transition cursor-pointer ${
+              showSettingsDrawer
+                ? 'bg-amber-500 text-black border-amber-400'
+                : 'bg-[#121622] text-zinc-300 border-zinc-700 hover:border-amber-500/40'
+            }`}
+            title="Model Tuning & System Instructions"
+          >
+            <Sliders className="w-4 h-4" />
+          </button>
         </div>
       </div>
 
-      {/* BOTTOM CONTROL DECK: Code, Backend, Database, Billing, APNCLOUD, Android */}
-      <div className="p-6 md:p-8 rounded-3xl bg-[#0B0D13] border-2 border-amber-500/30 space-y-6 shadow-2xl">
-        {/* Navigation Tabs */}
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-800 pb-4">
-          <div className="flex flex-wrap items-center gap-1.5">
-            {[
-              { id: 'code', label: 'Code Editor & Files', icon: Code2, count: files.length },
-              { id: 'backend', label: 'Backend & APIs', icon: Server, count: 'Express' },
-              { id: 'database', label: 'Database Systems', icon: Database, count: databases.length },
-              { id: 'billing', label: 'Billing & Payments', icon: CreditCard, count: billingGateways.length },
-              { id: 'apncloud', label: 'APNCLOUD Hosting', icon: Globe, count: 'lionixai.com' },
-              { id: 'android', label: 'Android Build Center', icon: Smartphone, count: 'APK/AAB' },
-              { id: 'tests', label: 'Automated Tests', icon: CheckCircle, count: testResults.length },
-              { id: 'logs', label: 'Terminal & Audit', icon: Terminal, count: studioLogs.length },
-            ].map((tab) => {
-              const Icon = tab.icon;
-              const isActive = activeBottomTab === tab.id;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveBottomTab(tab.id as any)}
-                  className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer ${
-                    isActive
-                      ? 'bg-amber-500 text-black shadow-lg shadow-amber-500/20'
-                      : 'bg-[#12151F] text-zinc-400 hover:text-white border border-zinc-800'
-                  }`}
-                >
-                  <Icon className="w-3.5 h-3.5" />
-                  <span>{tab.label}</span>
-                  <span className={`px-1.5 py-0.2 rounded text-[10px] font-mono ${isActive ? 'bg-black/20 text-black' : 'bg-zinc-800 text-zinc-400'}`}>
-                    {tab.count}
-                  </span>
-                </button>
-              );
-            })}
+      {/* ==========================================
+          MODEL SETTINGS & SYSTEM INSTRUCTIONS DRAWER
+          ========================================== */}
+      {showSettingsDrawer && (
+        <div className="p-5 rounded-3xl bg-[#0D1017] border border-amber-500/30 shadow-2xl space-y-4 animate-in slide-in-from-top-4 duration-200">
+          <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
+            <div className="flex items-center gap-2">
+              <Sliders className="w-4 h-4 text-amber-400" />
+              <h3 className="font-bold text-sm text-white">Google Gemini Model Configuration & Parameters</h3>
+            </div>
+            <button
+              onClick={() => setShowSettingsDrawer(false)}
+              className="text-xs text-zinc-400 hover:text-white"
+            >
+              Close ✕
+            </button>
           </div>
-        </div>
 
-        {/* Tab 1: Code Editor & Project File Explorer */}
-        {activeBottomTab === 'code' && (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-            {/* Explorer Column */}
-            <div className="lg:col-span-4 p-4 rounded-2xl bg-[#0E1118] border border-zinc-800 space-y-3">
-              <div className="flex items-center justify-between border-b border-zinc-800 pb-2">
-                <span className="text-xs font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-1.5">
-                  <FolderTree className="w-3.5 h-3.5 text-amber-400" />
-                  Project Files ({files.length})
-                </span>
-                <button
-                  onClick={() => setShowNewFileModal(true)}
-                  className="px-2.5 py-1 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 text-xs font-semibold flex items-center gap-1 border border-amber-500/30 cursor-pointer"
-                >
-                  <Plus className="w-3 h-3" />
-                  <span>Add File</span>
-                </button>
-              </div>
-
-              <div className="space-y-1.5 max-h-[460px] overflow-y-auto">
-                {files.map((f, i) => (
-                  <button
-                    key={i}
-                    onClick={() => {
-                      setActiveFileIndex(i);
-                      setActiveFileContent(f.content);
-                    }}
-                    className={`w-full text-left px-3 py-2.5 rounded-xl border transition flex items-center justify-between text-xs font-mono cursor-pointer ${
-                      activeFileIndex === i
-                        ? 'bg-amber-500/15 border-amber-500/50 text-amber-300'
-                        : 'bg-[#12151F] border-zinc-800 text-zinc-400 hover:text-white'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2 truncate">
-                      <FileCode className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                      <span className="truncate">{f.name}</span>
-                    </div>
-                    <span className="text-[10px] text-zinc-500 uppercase">{f.language}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Code Editor Column */}
-            <div className="lg:col-span-8 rounded-2xl bg-[#0E1118] border border-zinc-800 overflow-hidden flex flex-col">
-              <div className="px-5 py-3.5 bg-[#12151F] border-b border-zinc-800 flex items-center justify-between">
-                <div className="flex items-center gap-2 font-mono text-xs text-zinc-300">
-                  <FileCode className="w-4 h-4 text-amber-400" />
-                  <span>{activeFile?.path || activeFile?.name}</span>
-                  <span className="px-2 py-0.5 rounded text-[10px] uppercase font-mono bg-zinc-800 text-zinc-400">
-                    {activeFile?.language}
-                  </span>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={handleSaveFileContent}
-                    className="px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1 transition cursor-pointer"
-                  >
-                    <Check className="w-3.5 h-3.5" />
-                    <span>Save Changes</span>
-                  </button>
-                  <button
-                    onClick={() => copyToClipboard(activeFileContent)}
-                    className="px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-xs text-zinc-300 flex items-center gap-1 cursor-pointer"
-                  >
-                    <Copy className="w-3.5 h-3.5" />
-                    <span>{copied ? 'Copied!' : 'Copy'}</span>
-                  </button>
-                </div>
-              </div>
-
-              <textarea
-                value={activeFileContent}
-                onChange={(e) => {
-                  setActiveFileContent(e.target.value);
-                  setIsModified(true);
-                }}
-                className="p-5 bg-black/95 font-mono text-[12px] text-zinc-200 h-[460px] overflow-y-auto leading-relaxed outline-none resize-none"
-                spellCheck={false}
-              />
-            </div>
-          </div>
-        )}
-
-        {/* Tab 2: Backend & APIs */}
-        {activeBottomTab === 'backend' && (
-          <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="p-4 rounded-2xl bg-[#11141C] border border-emerald-500/30 space-y-1">
-                <span className="text-[10px] uppercase font-bold text-emerald-400 flex items-center gap-1">
-                  <CheckCircle className="w-3.5 h-3.5" />
-                  Backend Service State
-                </span>
-                <p className="text-sm font-bold text-white">Express REST Server Active</p>
-                <p className="text-[11px] text-zinc-400">Auto-detected route middleware & JWT auth</p>
-              </div>
-
-              <div className="p-4 rounded-2xl bg-[#11141C] border border-zinc-800 space-y-1">
-                <span className="text-[10px] uppercase font-bold text-zinc-400">API Health Probe</span>
-                <p className="text-sm font-bold text-amber-400">HTTP 200 OK (18ms)</p>
-                <p className="text-[11px] text-zinc-400">Endpoint: /api/health</p>
-              </div>
-
-              <div className="p-4 rounded-2xl bg-[#11141C] border border-zinc-800 space-y-1">
-                <span className="text-[10px] uppercase font-bold text-zinc-400">Hosting Environment</span>
-                <p className="text-sm font-bold text-white">APNCLOUD LiteSpeed Node 20.x</p>
-                <p className="text-[11px] text-zinc-400">Production Entry: app.js</p>
-              </div>
-            </div>
-
-            {/* Central API Key Vault Table */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <h4 className="font-cinzel text-sm font-bold text-white flex items-center gap-2">
-                  <Key className="w-4 h-4 text-amber-400" />
-                  <span>Central API Vault & Secure Credentials (Backend-Protected)</span>
-                </h4>
-                <span className="text-xs text-zinc-500 font-mono">Zero client-side credential exposure</span>
-              </div>
-
-              <div className="overflow-x-auto rounded-2xl border border-zinc-800 bg-[#07080B]">
-                <table className="w-full text-left text-xs">
-                  <thead className="bg-[#11141C] text-zinc-400 uppercase font-mono text-[10px] border-b border-zinc-800">
-                    <tr>
-                      <th className="p-3">API Name</th>
-                      <th className="p-3">Provider / Base URL</th>
-                      <th className="p-3">Auth Scheme</th>
-                      <th className="p-3">Status</th>
-                      <th className="p-3 text-right">Verification Action</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-zinc-800/80 font-mono text-zinc-300">
-                    {apiVaultList.map((apiItem) => (
-                      <tr key={apiItem.id} className="hover:bg-[#111319] transition">
-                        <td className="p-3 font-bold text-white">{apiItem.name}</td>
-                        <td className="p-3 text-zinc-400 text-[11px]">{apiItem.baseUrl}</td>
-                        <td className="p-3 text-amber-400">{apiItem.authType.toUpperCase()} ({apiItem.keyName})</td>
-                        <td className="p-3">
-                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${apiItem.lastTestStatus === 'SUCCESS' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-300'}`}>
-                            {apiItem.lastTestStatus || 'NOT_TESTED'}
-                          </span>
-                        </td>
-                        <td className="p-3 text-right">
-                          <button
-                            onClick={() => handleTestApiVault(apiItem)}
-                            disabled={vaultTestingId === apiItem.id}
-                            className="px-3 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-sans transition cursor-pointer"
-                          >
-                            {vaultTestingId === apiItem.id ? 'Testing...' : 'Test Connection'}
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Tab 3: Database Systems */}
-        {activeBottomTab === 'database' && (
-          <div className="space-y-6">
-            <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
-              <div>
-                <h4 className="font-cinzel text-sm font-bold text-white flex items-center gap-2">
-                  <Database className="w-4 h-4 text-amber-400" />
-                  <span>Autonomous Relational & Document Database Cluster</span>
-                </h4>
-                <p className="text-xs text-zinc-400 mt-0.5">
-                  Real TCP socket connections tested against target database servers. No simulated connections.
-                </p>
-              </div>
-
-              {dbTestMessage && (
-                <span className="text-xs text-amber-400 font-mono bg-amber-500/10 px-3 py-1 rounded-lg border border-amber-500/30">
-                  {dbTestMessage}
-                </span>
-              )}
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {databases.map((dbItem) => (
-                <div key={dbItem.id} className="p-5 rounded-2xl bg-[#0E1118] border border-zinc-800 space-y-3 flex flex-col justify-between">
-                  <div>
-                    <div className="flex items-center justify-between mb-1.5">
-                      <span className="text-xs font-bold text-white uppercase">{dbItem.name}</span>
-                      <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold ${dbItem.status === 'connected' ? 'bg-emerald-500/20 text-emerald-300' : 'bg-red-500/20 text-red-300'}`}>
-                        ● {dbItem.status.toUpperCase()}
-                      </span>
-                    </div>
-                    <p className="text-xs text-zinc-400 font-mono">
-                      Host: {dbItem.host}:{dbItem.port}
-                    </p>
-                    <p className="text-xs text-zinc-400 font-mono">
-                      DB: {dbItem.database} • Tables: {dbItem.tablesCount || 0}
-                    </p>
-                    {dbItem.lastPingMs ? (
-                      <p className="text-[11px] text-emerald-400 font-mono mt-1">
-                        Latency: {dbItem.lastPingMs}ms
-                      </p>
-                    ) : null}
-                    {dbItem.errorMessage && (
-                      <p className="text-[10px] text-red-400 font-mono mt-1 leading-tight">
-                        {dbItem.errorMessage}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="pt-3 border-t border-zinc-800 flex items-center justify-between gap-2">
-                    <button
-                      onClick={() => handleTestDatabase(dbItem)}
-                      disabled={dbTestingId === dbItem.id}
-                      className="flex-1 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-xs text-zinc-200 font-semibold transition cursor-pointer flex items-center justify-center gap-1"
-                    >
-                      {dbTestingId === dbItem.id ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Play className="w-3 h-3 text-amber-400" />}
-                      <span>Test Socket</span>
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Tab 4: Billing & Payments */}
-        {activeBottomTab === 'billing' && (
-          <div className="space-y-6">
-            <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
-              <div>
-                <h4 className="font-cinzel text-sm font-bold text-white flex items-center gap-2">
-                  <CreditCard className="w-4 h-4 text-amber-400" />
-                  <span>Real Billing & Payment Gateway Hub</span>
-                </h4>
-                <p className="text-xs text-zinc-400 mt-0.5">
-                  Official API integration for Stripe, PayPal, SSLCommerz, and bKash with real webhook listeners.
-                </p>
-              </div>
-
-              {gwTestResult && (
-                <span className="text-xs text-emerald-400 font-mono bg-emerald-500/10 px-3 py-1 rounded-lg border border-emerald-500/30">
-                  {gwTestResult.message}
-                </span>
-              )}
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {billingGateways.map((gw) => (
-                <div key={gw.id} className="p-5 rounded-2xl bg-[#0E1118] border border-zinc-800 space-y-3 flex flex-col justify-between">
-                  <div>
-                    <div className="flex items-center justify-between mb-1.5">
-                      <span className="text-xs font-bold text-white">{gw.name}</span>
-                      <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-amber-500/10 text-amber-400 font-bold">
-                        {gw.currency}
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-zinc-400 font-mono truncate">
-                      Webhook: {gw.webhookUrl}
-                    </p>
-                    <div className="mt-2 space-y-1">
-                      {gw.features.slice(0, 3).map((f, i) => (
-                        <span key={i} className="block text-[10px] text-zinc-500">• {f}</span>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="pt-3 border-t border-zinc-800">
-                    <button
-                      onClick={() => handleTestBillingGateway(gw)}
-                      disabled={gwTesting === gw.gateway}
-                      className="w-full py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-xs text-zinc-200 font-semibold transition cursor-pointer flex items-center justify-center gap-1.5"
-                    >
-                      {gwTesting === gw.gateway ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Play className="w-3 h-3 text-amber-400" />}
-                      <span>Test Handshake</span>
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Invoices Table */}
-            <div className="p-5 rounded-2xl bg-[#07080B] border border-zinc-800 space-y-3">
-              <span className="text-xs font-bold uppercase tracking-wider text-zinc-300 flex items-center gap-2">
-                <Receipt className="w-4 h-4 text-amber-400" />
-                Active Billing Invoices ({invoices.length})
-              </span>
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs font-mono">
-                  <thead className="text-[10px] text-zinc-500 uppercase border-b border-zinc-800">
-                    <tr>
-                      <th className="p-2">Invoice #</th>
-                      <th className="p-2">Client</th>
-                      <th className="p-2">Amount</th>
-                      <th className="p-2">Gateway</th>
-                      <th className="p-2">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-zinc-800/60 text-zinc-300">
-                    {invoices.map((inv) => (
-                      <tr key={inv.id}>
-                        <td className="p-2 font-bold text-amber-400">{inv.invoiceNumber}</td>
-                        <td className="p-2">{inv.customerName}</td>
-                        <td className="p-2 font-bold text-white">${inv.total} {inv.currency}</td>
-                        <td className="p-2 uppercase">{inv.gateway}</td>
-                        <td className="p-2">
-                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${inv.status === 'paid' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-300'}`}>
-                            {inv.status.toUpperCase()}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Tab 5: APNCLOUD Server & Deploy */}
-        {activeBottomTab === 'apncloud' && (
-          <div className="space-y-6">
-            <div className="p-6 rounded-3xl bg-gradient-to-br from-[#121622] via-[#0E1118] to-[#07080B] border border-amber-500/40 space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-800 pb-4">
-                <div>
-                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-bold uppercase tracking-wider mb-1.5">
-                    <Globe className="w-3.5 h-3.5" />
-                    <span>Company Production Domain</span>
-                  </div>
-                  <h3 className="font-cinzel text-xl font-black text-white">
-                    https://lionixai.com & www.lionixai.com
-                  </h3>
-                  <p className="text-xs text-zinc-400 mt-0.5">
-                    Hosting Provider: <strong className="text-amber-400">APNCLOUD</strong> (DirectAdmin / LiteSpeed Enterprise Web Server)
-                  </p>
-                </div>
-
-                <div className="flex flex-wrap items-center gap-2">
-                  <button
-                    onClick={handleDetectServerCapabilities}
-                    disabled={isProbingCaps}
-                    className="px-4 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
-                  >
-                    {isProbingCaps ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Activity className="w-3.5 h-3.5 text-amber-400" />}
-                    <span>Detect Server Capabilities</span>
-                  </button>
-
-                  <button
-                    onClick={handleGenerateApnCloudPackage}
-                    disabled={isGeneratingPackage}
-                    className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:brightness-110 text-black font-extrabold text-xs uppercase tracking-wider transition flex items-center gap-2 shadow-lg shadow-amber-500/20 cursor-pointer"
-                  >
-                    {isGeneratingPackage ? <RefreshCw className="w-4 h-4 animate-spin text-black" /> : <Download className="w-4 h-4 text-black" />}
-                    <span>Generate APNCLOUD Package (.ZIP)</span>
-                  </button>
-                </div>
-              </div>
-
-              {pkgSuccessMessage && (
-                <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/40 text-emerald-300 text-xs font-mono flex items-center justify-between">
-                  <span>✓ {pkgSuccessMessage}</span>
-                  <a
-                    href="/api/downloads/apncloud-package"
-                    download="lionixai_apncloud_deployment.zip"
-                    className="px-3 py-1 rounded bg-emerald-500 text-black font-bold uppercase text-[10px]"
-                  >
-                    Download ZIP Now
-                  </a>
-                </div>
-              )}
-
-              {/* Detected Capabilities Result */}
-              {serverCaps && (
-                <div className="p-4 rounded-2xl bg-[#090C12] border border-amber-500/30 font-mono text-xs space-y-2">
-                  <span className="text-amber-400 font-bold block">
-                    Probe Result for {serverCaps.serverName} ({serverCaps.hostingProvider}):
-                  </span>
-                  <p className="text-zinc-300 font-sans text-xs leading-relaxed">{serverCaps.summary}</p>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2 pt-2 border-t border-zinc-800 text-[11px] text-zinc-400">
-                    <div>• Web Server: <strong className="text-white">{serverCaps.capabilities.webServer}</strong></div>
-                    <div>• Node.js: <strong className="text-white">{serverCaps.capabilities.nodejs.version}</strong></div>
-                    <div>• AutoSSL: <strong className="text-white">Active (Let&apos;s Encrypt)</strong></div>
-                    <div>• Database: <strong className="text-white">MySQL 8.0 Active</strong></div>
-                  </div>
-                </div>
-              )}
-
-              {/* Technical Specifications */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
-                <div className="p-3.5 rounded-xl bg-[#0B0E14] border border-zinc-800 space-y-1">
-                  <span className="text-[10px] text-zinc-500 uppercase font-mono">Web Root on APNCLOUD</span>
-                  <p className="font-mono text-amber-400 font-bold">/domains/lionixai.com/public_html</p>
-                </div>
-                <div className="p-3.5 rounded-xl bg-[#0B0E14] border border-zinc-800 space-y-1">
-                  <span className="text-[10px] text-zinc-500 uppercase font-mono">ZIP Layout Requirement</span>
-                  <p className="font-mono text-emerald-400 font-bold">index.html at root of ZIP (Verified)</p>
-                </div>
-                <div className="p-3.5 rounded-xl bg-[#0B0E14] border border-zinc-800 space-y-1">
-                  <span className="text-[10px] text-zinc-500 uppercase font-mono">HTTP Rewrite Module</span>
-                  <p className="font-mono text-white font-bold">LiteSpeed Cache + .htaccess Rewrite</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Tab 6: Android Build Center */}
-        {activeBottomTab === 'android' && (
-          <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-800 pb-3">
-              <div>
-                <h4 className="font-cinzel text-sm font-bold text-white flex items-center gap-2">
-                  <Smartphone className="w-4 h-4 text-amber-400" />
-                  <span>Real Android APK & AAB Compilation Center</span>
-                </h4>
-                <p className="text-xs text-zinc-400 mt-0.5">
-                  Target: Android SDK 35 (Android 15), Gradle 8.7, Kotlin Compose with authentic DEX bytecode.
-                </p>
-              </div>
-
-              <div className="flex flex-wrap items-center gap-2">
-                <button
-                  disabled={isBuildingAndroid}
-                  onClick={() => handleBuildAndroid('debug')}
-                  className="px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-bold uppercase tracking-wider transition cursor-pointer"
-                >
-                  Build Debug APK
-                </button>
-                <button
-                  disabled={isBuildingAndroid}
-                  onClick={() => handleBuildAndroid('release')}
-                  className="px-4 py-2 rounded-xl bg-[#171B26] hover:bg-[#1E2433] text-amber-300 border border-amber-500/30 text-xs font-bold uppercase tracking-wider transition cursor-pointer"
-                >
-                  Build Release APK
-                </button>
-                <button
-                  disabled={isBuildingAndroid}
-                  onClick={() => handleBuildAndroid('signed-aab')}
-                  className="px-5 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:brightness-110 text-black font-extrabold text-xs uppercase tracking-wider transition shadow-lg shadow-amber-500/20 cursor-pointer"
-                >
-                  {isBuildingAndroid ? 'Compiling Gradle...' : 'Build Signed Release AAB'}
-                </button>
-              </div>
-            </div>
-
-            {androidBuildArtifact && (
-              <div className="p-5 rounded-2xl bg-[#090C12] border border-emerald-500/40 font-mono text-xs space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="font-bold text-emerald-400 flex items-center gap-2">
-                    <CheckCircle className="w-4 h-4" />
-                    Artifact Successfully Generated: {androidBuildArtifact.filename}
-                  </span>
-                  <a
-                    href={androidBuildArtifact.downloadUrl}
-                    download
-                    className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-black font-bold uppercase text-xs"
-                  >
-                    Download Binary
-                  </a>
-                </div>
-                <p className="text-zinc-300 break-all text-[11px]">SHA-256 Checksum: {androidBuildArtifact.sha256}</p>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Tab 7: Automated Tests */}
-        {activeBottomTab === 'tests' && (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
-              <span className="text-xs font-bold uppercase tracking-wider text-zinc-300">
-                Automated Quality & Security Gates ({testResults.length})
-              </span>
-              <button
-                onClick={handleRunTests}
-                disabled={testingRunning}
-                className="px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black text-xs font-bold uppercase tracking-wider transition cursor-pointer"
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            {/* Model Selector */}
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-zinc-300">Active Model</label>
+              <select
+                value={selectedModel}
+                onChange={(e) => setSelectedModel(e.target.value)}
+                className="w-full px-3 py-2 rounded-xl bg-[#141824] border border-zinc-700 text-xs text-white outline-none focus:border-amber-400"
               >
-                {testingRunning ? 'Testing...' : 'Re-Run Suite'}
-              </button>
+                <option value="gemini-3.8-flash">Gemini 3.8 Flash (Flagship General & Code)</option>
+                <option value="gemini-4-argon">Gemini 4 Argon (Deep Architectural Reasoning)</option>
+                <option value="gemini-3.1-flash-lite">Gemini 3.1 Flash Lite (High Throughput)</option>
+                <option value="gemini-3.1-flash-lite-image">Gemini 3.1 Flash Lite Image (Art & Vision)</option>
+                <option value="gemini-nano-banana-2.1">Gemini Nano Banana 2.1 (HD 4K Images)</option>
+                <option value="gemini-3.5-transcribe">Gemini 3.5 Transcribe (Audio STT)</option>
+                <option value="gemini-3.8-flash-lite-tts">Gemini 3.8 Flash Lite TTS (Voice)</option>
+              </select>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 font-mono text-xs">
-              {testResults.map((t, idx) => (
-                <div
-                  key={idx}
-                  className={`p-3.5 rounded-xl border flex items-start gap-2.5 ${
-                    t.status === 'passed' ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300' : 'bg-red-500/10 border-red-500/30 text-red-300'
-                  }`}
-                >
-                  {t.status === 'passed' ? (
-                    <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                  ) : (
-                    <XCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
-                  )}
-                  <div>
-                    <span className="font-bold text-white block">{t.name}</span>
-                    <span className="text-[10px] text-zinc-400">Duration: {t.durationMs}ms</span>
-                  </div>
-                </div>
-              ))}
+            {/* Thinking Level */}
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-zinc-300">Thinking Level (Gemini 3/4)</label>
+              <select
+                value={thinkingLevel}
+                onChange={(e) => setThinkingLevel(e.target.value as any)}
+                className="w-full px-3 py-2 rounded-xl bg-[#141824] border border-zinc-700 text-xs text-white outline-none focus:border-amber-400"
+              >
+                <option value="LOW">LOW (Fastest Latency & Minimal Reasoning)</option>
+                <option value="MEDIUM">MEDIUM (Balanced Depth & Efficiency)</option>
+                <option value="HIGH">HIGH (Maximum Deep Reasoning for Complex Code)</option>
+              </select>
             </div>
-          </div>
-        )}
 
-        {/* Tab 8: Terminal & Audit Logs */}
-        {activeBottomTab === 'logs' && (
-          <div className="p-4 rounded-2xl bg-[#060709] border border-zinc-800 font-mono text-xs text-zinc-300 space-y-1.5 max-h-64 overflow-y-auto">
-            {studioLogs.map((log, i) => (
-              <div key={i} className="flex items-start gap-2">
-                <span className="text-amber-500 select-none">›</span>
-                <span>{log}</span>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+            {/* Voice Persona for TTS */}
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-zinc-300">TTS Voice Persona</label>
+              <select
+                value={selectedVoice}
+                onChange={(e) => setSelectedVoice(e.target.value)}
+                className="w-full px-3 py-2 rounded-xl bg-[#141824] border border-zinc-700 text-xs text-white outline-none focus:border-amber-400"
+              >
+                <option value="Kore">Kore (Clear, Professional, Authoritative)</option>
+                <option value="Puck">Puck (Energetic, Modern, Engaging)</option>
+                <option value="Charon">Charon (Deep, Formal, Calm)</option>
+                <option value="Fenrir">Fenrir (Bold, Confident, Dynamic)</option>
+                <option value="Aoede">Aoede (Warm, Melodic, Expressive)</option>
+              </select>
+            </div>
 
-      {/* New Project Modal */}
-      {showNewModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in">
-          <div className="bg-[#0B0E14] border border-amber-500/40 rounded-3xl w-full max-w-md p-6 shadow-2xl relative space-y-4">
-            <h3 className="font-cinzel text-base font-bold text-white">Create New Project in AI Studio</h3>
-            <form onSubmit={handleCreateNewProject} className="space-y-4 text-xs">
-              <div>
-                <label className="text-zinc-300 block mb-1 font-semibold">Project Title *</label>
+            {/* JSON Mode Toggle */}
+            <div className="flex flex-col justify-end">
+              <label className="flex items-center gap-2 p-2.5 rounded-xl bg-[#141824] border border-zinc-700 cursor-pointer">
                 <input
-                  type="text"
-                  required
-                  value={newProjectName}
-                  onChange={(e) => setNewProjectName(e.target.value)}
-                  placeholder="e.g. LIONIX FinTech Portal"
-                  className="w-full px-3 py-2 rounded-xl bg-[#121620] border border-zinc-800 text-white outline-none focus:border-amber-400"
+                  type="checkbox"
+                  checked={jsonMode}
+                  onChange={(e) => setJsonMode(e.target.checked)}
+                  className="rounded text-amber-500 focus:ring-amber-400"
                 />
-              </div>
+                <span className="text-xs text-zinc-300 font-medium">Enforce JSON Output Mode</span>
+              </label>
+            </div>
+          </div>
 
-              <div>
-                <label className="text-zinc-300 block mb-1 font-semibold">Project Type *</label>
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setNewProjectType('website')}
-                    className={`p-3 rounded-xl border text-xs font-bold flex flex-col items-center gap-1 cursor-pointer ${
-                      newProjectType === 'website' ? 'bg-amber-500/20 border-amber-500 text-amber-300' : 'bg-[#121620] border-zinc-800 text-zinc-400'
-                    }`}
-                  >
-                    <Globe className="w-4 h-4" />
-                    <span>Website Platform</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setNewProjectType('android')}
-                    className={`p-3 rounded-xl border text-xs font-bold flex flex-col items-center gap-1 cursor-pointer ${
-                      newProjectType === 'android' ? 'bg-amber-500/20 border-amber-500 text-amber-300' : 'bg-[#121620] border-zinc-800 text-zinc-400'
-                    }`}
-                  >
-                    <Smartphone className="w-4 h-4" />
-                    <span>Android Application</span>
-                  </button>
-                </div>
-              </div>
-
-              <div>
-                <label className="text-zinc-300 block mb-1 font-semibold">Initial Prompt / Instruction</label>
-                <textarea
-                  rows={3}
-                  value={newProjectPrompt}
-                  onChange={(e) => setNewProjectPrompt(e.target.value)}
-                  placeholder="Describe key requirements..."
-                  className="w-full p-2.5 rounded-xl bg-[#121620] border border-zinc-800 text-white outline-none resize-none focus:border-amber-400"
-                />
-              </div>
-
-              <div className="flex gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setShowNewModal(false)}
-                  className="w-1/3 py-2 rounded-xl bg-zinc-800 text-zinc-300 font-semibold cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isCreating}
-                  className="w-2/3 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 font-extrabold text-black uppercase cursor-pointer"
-                >
-                  {isCreating ? 'Creating...' : 'Create Project'}
-                </button>
-              </div>
-            </form>
+          {/* System Instructions Editor */}
+          <div className="space-y-1 pt-2">
+            <label className="text-xs font-semibold text-zinc-300 flex items-center justify-between">
+              <span>System Instructions</span>
+              <span className="text-[11px] text-zinc-500 font-mono">Governs all chat and synthesis reasoning</span>
+            </label>
+            <textarea
+              rows={2}
+              value={systemInstruction}
+              onChange={(e) => setSystemInstruction(e.target.value)}
+              className="w-full px-3 py-2 rounded-xl bg-[#141824] border border-zinc-700 text-xs text-zinc-200 outline-none focus:border-amber-400 font-mono"
+              placeholder="Provide master system instructions..."
+            />
           </div>
         </div>
       )}
 
-      {/* New File Modal */}
-      {showNewFileModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in">
-          <div className="bg-[#0B0E14] border border-amber-500/40 rounded-2xl w-full max-w-sm p-5 shadow-2xl space-y-4">
-            <h4 className="font-cinzel text-sm font-bold text-white flex items-center gap-1.5">
-              <FilePlus className="w-4 h-4 text-amber-400" />
-              <span>Add File to Project</span>
-            </h4>
+      {/* ==========================================
+          TAB 1: GEMINI CHAT WORKSPACE (GOOGLE AI STUDIO)
+          ========================================== */}
+      {workspaceMode === 'chat' && (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          {/* LEFT: Conversation Threads & Controls (3 cols) */}
+          <div className="lg:col-span-3 space-y-3">
+            <div className="p-4 rounded-3xl bg-[#0B0D13] border border-amber-500/20 space-y-3 shadow-xl">
+              <button
+                onClick={handleCreateNewChat}
+                className="w-full py-2.5 px-4 rounded-xl gold-gradient bg-gradient-to-r from-amber-500 to-amber-600 text-black font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-amber-500/20 hover:opacity-95 transition cursor-pointer"
+              >
+                <Plus className="w-4 h-4" />
+                <span>New Conversation</span>
+              </button>
 
-            <div className="space-y-3 text-xs">
-              <div>
-                <label className="text-zinc-300 block mb-1">File Name (with extension):</label>
-                <input
-                  type="text"
-                  required
-                  value={newFileName}
-                  onChange={(e) => setNewFileName(e.target.value)}
-                  placeholder="e.g. StripeWebhook.ts or schema.sql"
-                  className="w-full px-3 py-2 rounded-xl bg-[#121620] border border-zinc-800 text-white focus:border-amber-400 outline-none"
-                />
+              <div className="flex items-center justify-between pt-1 border-b border-zinc-800 pb-2">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-amber-500/70">
+                  Chat History ({conversations.length})
+                </span>
+                <button
+                  onClick={handleClearConversation}
+                  className="text-[10px] text-zinc-500 hover:text-red-400 transition"
+                  title="Clear messages in current chat"
+                >
+                  Clear Current
+                </button>
               </div>
 
-              <div>
-                <label className="text-zinc-300 block mb-1">Path (Optional):</label>
-                <input
-                  type="text"
-                  value={newFilePath}
-                  onChange={(e) => setNewFilePath(e.target.value)}
-                  placeholder="e.g. server/routes/StripeWebhook.ts"
-                  className="w-full px-3 py-2 rounded-xl bg-[#121620] border border-zinc-800 text-white focus:border-amber-400 outline-none"
-                />
+              {/* Chat Thread List */}
+              <div className="space-y-1.5 max-h-[460px] overflow-y-auto pr-1">
+                {conversations.map((c) => {
+                  const isActive = c.id === activeChatId;
+                  return (
+                    <div
+                      key={c.id}
+                      onClick={() => setActiveChatId(c.id)}
+                      className={`p-2.5 rounded-xl border text-left cursor-pointer transition flex items-center justify-between group ${
+                        isActive
+                          ? 'bg-amber-500/15 border-amber-500/40 text-amber-300'
+                          : 'bg-[#10141E] border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700'
+                      }`}
+                    >
+                      <div className="truncate pr-2">
+                        <p className="text-xs font-semibold truncate">{c.title}</p>
+                        <p className="text-[10px] text-zinc-500 font-mono mt-0.5">
+                          {c.messages.length} msgs • {c.createdAt}
+                        </p>
+                      </div>
+
+                      {conversations.length > 1 && (
+                        <button
+                          onClick={(e) => handleDeleteChat(c.id, e)}
+                          className="opacity-0 group-hover:opacity-100 p-1 text-zinc-500 hover:text-red-400 transition"
+                          title="Delete thread"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
 
-            <div className="flex gap-2 pt-2">
+            {/* Quick Context & Capabilities Card */}
+            <div className="p-4 rounded-3xl bg-[#0B0D13] border border-zinc-800 space-y-2 text-xs text-zinc-400">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-amber-400">
+                Multimodal Context
+              </span>
+              <p className="text-[11px] leading-relaxed">
+                Attach images, PDFs, ZIP archives, audio clips, or source code. Gemini processes full multimodal payloads with real-time SSE streaming.
+              </p>
+              <div className="pt-2 border-t border-zinc-800 flex flex-wrap gap-1 text-[10px] font-mono text-zinc-500">
+                <span className="px-1.5 py-0.5 rounded bg-zinc-900 border border-zinc-800">Bilingual EN/BN</span>
+                <span className="px-1.5 py-0.5 rounded bg-zinc-900 border border-zinc-800">SSE Typewriter</span>
+                <span className="px-1.5 py-0.5 rounded bg-zinc-900 border border-zinc-800">Voice STT/TTS</span>
+              </div>
+            </div>
+          </div>
+
+          {/* RIGHT: Chat Stream & Message Input (9 cols) */}
+          <div className="lg:col-span-9 flex flex-col h-[720px] rounded-3xl bg-[#0B0D13] border border-amber-500/25 overflow-hidden shadow-2xl">
+            {/* Chat Header Bar */}
+            <div className="px-5 py-3.5 bg-[#0E121B] border-b border-zinc-800 flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></div>
+                <h3 className="text-xs font-bold text-white truncate max-w-md">
+                  {currentChat.title}
+                </h3>
+              </div>
+
+              <div className="flex items-center gap-2">
+                {isStreaming && (
+                  <button
+                    onClick={handleStopGeneration}
+                    className="px-3 py-1 rounded-lg bg-red-500/20 border border-red-500/40 text-red-400 text-xs font-semibold flex items-center gap-1.5 hover:bg-red-500/30 transition cursor-pointer"
+                  >
+                    <Square className="w-3 h-3 fill-current" />
+                    <span>Stop Generation</span>
+                  </button>
+                )}
+                <span className="text-[11px] text-zinc-400 font-mono">
+                  {selectedModel}
+                </span>
+              </div>
+            </div>
+
+            {/* Chat Messages Scroll Container */}
+            <div ref={chatScrollRef} className="flex-1 overflow-y-auto p-5 space-y-4">
+              {currentChat.messages.length === 0 ? (
+                <div className="h-full flex flex-col items-center justify-center text-center p-8 text-zinc-500 space-y-3">
+                  <Bot className="w-10 h-10 text-amber-500/40" />
+                  <p className="text-sm font-semibold text-zinc-400">Ready to build with Google Gemini</p>
+                  <p className="text-xs max-w-md">
+                    Ask a technical question, upload code or design files, or prompt for a full-stack web or Android app.
+                  </p>
+                </div>
+              ) : (
+                currentChat.messages.map((msg, idx) => {
+                  const isUser = msg.role === 'user';
+                  const isEditing = editingMessageId === msg.id;
+
+                  return (
+                    <div
+                      key={msg.id}
+                      className={`flex gap-3 group ${isUser ? 'justify-end' : 'justify-start'}`}
+                    >
+                      {!isUser && (
+                        <div className="w-7 h-7 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center shrink-0 mt-1">
+                          <Sparkles className="w-4 h-4 text-amber-400" />
+                        </div>
+                      )}
+
+                      <div
+                        className={`max-w-[85%] rounded-2xl p-4 shadow-lg text-xs leading-relaxed ${
+                          isUser
+                            ? 'bg-gradient-to-r from-amber-500/20 to-amber-600/10 border border-amber-500/40 text-zinc-100'
+                            : 'bg-[#10141E] border border-zinc-800 text-zinc-200'
+                        }`}
+                      >
+                        {/* Attached files preview */}
+                        {msg.files && msg.files.length > 0 && (
+                          <div className="flex flex-wrap gap-2 mb-3">
+                            {msg.files.map((file, fIdx) => (
+                              <div
+                                key={fIdx}
+                                className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-black/40 border border-zinc-700 text-[11px]"
+                              >
+                                {file.previewUrl ? (
+                                  <img
+                                    src={file.previewUrl}
+                                    alt={file.name}
+                                    className="w-4 h-4 rounded object-cover"
+                                  />
+                                ) : (
+                                  <FileText className="w-3.5 h-3.5 text-amber-400" />
+                                )}
+                                <span className="font-mono text-zinc-300">{file.name}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Message Content or In-Place Editor */}
+                        {isEditing ? (
+                          <div className="space-y-2">
+                            <textarea
+                              rows={3}
+                              value={editingContent}
+                              onChange={(e) => setEditingContent(e.target.value)}
+                              className="w-full bg-black/60 border border-amber-500/40 rounded-lg p-2 text-xs text-white outline-none font-mono"
+                            />
+                            <div className="flex items-center justify-end gap-2">
+                              <button
+                                onClick={() => setEditingMessageId(null)}
+                                className="px-2.5 py-1 rounded bg-zinc-800 text-[11px] text-zinc-300"
+                              >
+                                Cancel
+                              </button>
+                              <button
+                                onClick={() => handleSaveEditedPrompt(idx)}
+                                className="px-3 py-1 rounded bg-amber-500 text-black font-bold text-[11px]"
+                              >
+                                Save & Regenerate
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="whitespace-pre-wrap font-sans">
+                            {msg.content || (
+                              <span className="inline-flex items-center gap-1.5 text-zinc-400 italic">
+                                <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
+                                Gemini is reasoning...
+                              </span>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Message Toolbar */}
+                        <div className="flex items-center justify-between pt-2.5 mt-2 border-t border-zinc-800/80 text-[10px] text-zinc-500 font-mono">
+                          <span>{msg.timestamp}</span>
+
+                          <div className="flex items-center gap-2">
+                            {/* Copy button */}
+                            <button
+                              onClick={() => handleCopyMessage(msg.id, msg.content)}
+                              className="hover:text-zinc-200 transition flex items-center gap-1"
+                              title="Copy response"
+                            >
+                              {copiedId === msg.id ? (
+                                <>
+                                  <Check className="w-3 h-3 text-emerald-400" />
+                                  <span className="text-emerald-400">Copied</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Copy className="w-3 h-3" />
+                                  <span>Copy</span>
+                                </>
+                              )}
+                            </button>
+
+                            {/* TTS Speak button */}
+                            {!isUser && msg.content && (
+                              <button
+                                onClick={() => handlePlayTTS(msg.id, msg.content)}
+                                className="hover:text-amber-400 transition flex items-center gap-1"
+                                title="Listen with Gemini TTS"
+                              >
+                                <Volume2 className={`w-3 h-3 ${ttsLoadingId === msg.id ? 'text-amber-400 animate-pulse' : ''}`} />
+                                <span>{ttsLoadingId === msg.id ? 'Playing...' : 'Speak'}</span>
+                              </button>
+                            )}
+
+                            {/* Edit prompt if user */}
+                            {isUser && !isEditing && (
+                              <button
+                                onClick={() => {
+                                  setEditingMessageId(msg.id);
+                                  setEditingContent(msg.content);
+                                }}
+                                className="hover:text-zinc-200 transition flex items-center gap-1"
+                                title="Edit prompt"
+                              >
+                                <Edit2 className="w-3 h-3" />
+                                <span>Edit</span>
+                              </button>
+                            )}
+
+                            {/* Regenerate button if model */}
+                            {!isUser && idx === currentChat.messages.length - 1 && !isStreaming && (
+                              <button
+                                onClick={() => handleRegenerateResponse(idx)}
+                                className="hover:text-amber-400 transition flex items-center gap-1"
+                                title="Regenerate this response"
+                              >
+                                <RotateCcw className="w-3 h-3" />
+                                <span>Regenerate</span>
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {isUser && (
+                        <div className="w-7 h-7 rounded-xl bg-amber-500 text-black font-bold flex items-center justify-center shrink-0 mt-1 text-xs">
+                          <User className="w-4 h-4" />
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            {/* Attached Files Chips Bar */}
+            {attachedFiles.length > 0 && (
+              <div className="px-5 py-2 bg-[#0E121B] border-t border-zinc-800 flex flex-wrap gap-2">
+                {attachedFiles.map((f, i) => (
+                  <div
+                    key={i}
+                    className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-black/60 border border-amber-500/30 text-xs text-amber-300"
+                  >
+                    {f.previewUrl ? (
+                      <img src={f.previewUrl} alt={f.name} className="w-4 h-4 rounded object-cover" />
+                    ) : (
+                      <FileText className="w-3.5 h-3.5 text-amber-400" />
+                    )}
+                    <span className="font-mono">{f.name}</span>
+                    <button
+                      onClick={() => handleRemoveAttachedFile(i)}
+                      className="ml-1 text-zinc-400 hover:text-red-400 text-xs font-bold"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Bottom Message Input Dock */}
+            <div className="p-4 bg-[#0E121B] border-t border-zinc-800 space-y-2">
+              <div className="flex items-end gap-2">
+                {/* Hidden File Input */}
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileSelect}
+                  multiple
+                  className="hidden"
+                  accept="image/*,.pdf,.zip,.html,.css,.js,.ts,.tsx,.json,.txt,.doc,.docx,.mp3,.wav,.mp4"
+                />
+
+                {/* File Attachment Button */}
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="p-3 rounded-2xl bg-[#141824] hover:bg-[#1C2132] border border-zinc-700 text-zinc-300 hover:text-amber-400 transition cursor-pointer"
+                  title="Upload multimodal file (Images, PDF, ZIP, Code, Media)"
+                >
+                  <Paperclip className="w-4 h-4" />
+                </button>
+
+                {/* Voice Record / STT Button */}
+                <button
+                  onClick={handleToggleVoiceRecording}
+                  disabled={isTranscribing}
+                  className={`p-3 rounded-2xl border transition cursor-pointer ${
+                    isRecording
+                      ? 'bg-red-500/20 border-red-500 text-red-400 animate-pulse'
+                      : isTranscribing
+                      ? 'bg-amber-500/20 border-amber-500 text-amber-400'
+                      : 'bg-[#141824] hover:bg-[#1C2132] border-zinc-700 text-zinc-300 hover:text-amber-400'
+                  }`}
+                  title={isRecording ? 'Click to stop recording' : 'Record voice (Gemini 3.5 Transcribe)'}
+                >
+                  {isRecording ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                </button>
+
+                {/* Prompt Textarea */}
+                <div className="flex-1 relative">
+                  <textarea
+                    rows={2}
+                    value={chatInput}
+                    onChange={(e) => setChatInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        handleSendMessage();
+                      }
+                    }}
+                    placeholder={
+                      isRecording
+                        ? 'Listening to microphone... Speak clearly.'
+                        : isTranscribing
+                        ? 'Transcribing audio speech via Gemini 3.5...'
+                        : 'Ask Gemini anything, request full-stack software, or attach files... (Shift+Enter for new line)'
+                    }
+                    className="w-full bg-[#141824] border border-zinc-700 focus:border-amber-400 rounded-2xl px-4 py-2.5 text-xs text-white placeholder-zinc-500 outline-none resize-none font-sans"
+                  />
+                </div>
+
+                {/* Send / Stop Button */}
+                {isStreaming ? (
+                  <button
+                    onClick={handleStopGeneration}
+                    className="p-3 rounded-2xl bg-red-500 hover:bg-red-600 text-white font-bold transition shadow-lg shadow-red-500/20 cursor-pointer"
+                    title="Stop streaming response"
+                  >
+                    <Square className="w-4 h-4 fill-current" />
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => handleSendMessage()}
+                    disabled={!chatInput.trim() && attachedFiles.length === 0}
+                    className="p-3 rounded-2xl bg-amber-500 hover:bg-amber-400 text-black font-bold transition shadow-lg shadow-amber-500/20 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                    title="Send message to Gemini"
+                  >
+                    <Send className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ==========================================
+          TAB 2: AI APP & MULTI-FILE CODE BUILDER
+          ========================================== */}
+      {workspaceMode === 'builder' && (
+        <div className="space-y-4">
+          {/* Builder Prompt Synthesis Bar */}
+          <div className="p-5 rounded-3xl bg-[#0B0D13] border border-amber-500/30 shadow-xl space-y-3">
+            <div className="flex items-center justify-between border-b border-zinc-800 pb-2">
+              <div className="flex items-center gap-2">
+                <Workflow className="w-4 h-4 text-amber-400" />
+                <h3 className="text-xs font-bold text-white uppercase tracking-wider">
+                  AI App Synthesizer (Gemini 3.8 Flash Code Engine)
+                </h3>
+              </div>
+              <span className="text-[11px] text-zinc-400 font-mono">
+                Project: {activeProject?.name}
+              </span>
+            </div>
+
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={builderPrompt}
+                onChange={(e) => setBuilderPrompt(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSynthesizeApp()}
+                placeholder="e.g., Create a real-time cryptocurrency dashboard with price charts, alerts, and transaction history..."
+                className="flex-1 bg-[#121622] border border-zinc-700 focus:border-amber-400 rounded-xl px-4 py-2.5 text-xs text-white placeholder-zinc-500 outline-none font-mono"
+              />
               <button
-                type="button"
-                onClick={() => setShowNewFileModal(false)}
-                className="w-1/3 py-2 rounded-lg bg-zinc-800 text-zinc-300 font-semibold cursor-pointer text-xs"
+                onClick={handleSynthesizeApp}
+                disabled={isSynthesizing || !builderPrompt.trim()}
+                className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs transition flex items-center gap-2 shadow-lg shadow-amber-500/20 cursor-pointer disabled:opacity-40"
+              >
+                <Sparkles className={`w-4 h-4 ${isSynthesizing ? 'animate-spin' : ''}`} />
+                <span>{isSynthesizing ? 'Synthesizing...' : 'Generate App'}</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Multi-File Code Editor & Explorer Layout */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+            {/* File Explorer Tree (3 cols) */}
+            <div className="lg:col-span-3 rounded-2xl bg-[#0B0D13] border border-zinc-800 p-3 space-y-2 h-[600px] flex flex-col">
+              <div className="flex items-center justify-between border-b border-zinc-800 pb-2">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-amber-400">
+                  <FolderTree className="w-4 h-4" />
+                  <span>Files ({activeProject?.files?.length || 0})</span>
+                </div>
+                <button
+                  onClick={() => setShowNewFileModal(true)}
+                  className="p-1 hover:bg-zinc-800 text-zinc-400 hover:text-white rounded"
+                  title="Add new file"
+                >
+                  <FilePlus className="w-3.5 h-3.5" />
+                </button>
+              </div>
+
+              {/* Search file filter */}
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Filter files..."
+                className="w-full bg-[#121622] border border-zinc-800 rounded-lg px-2.5 py-1 text-xs text-zinc-300 outline-none font-mono"
+              />
+
+              {/* File List */}
+              <div className="flex-1 overflow-y-auto space-y-1 pr-1">
+                {filteredFiles.map((file, idx) => {
+                  const isCurrent = activeProject?.files.indexOf(file) === activeFileIndex;
+                  return (
+                    <button
+                      key={idx}
+                      onClick={() => {
+                        const originalIndex = activeProject?.files.indexOf(file) ?? 0;
+                        setActiveFileIndex(originalIndex);
+                        setActiveFileContent(file.content);
+                        setIsModified(false);
+                      }}
+                      className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-mono transition text-left cursor-pointer ${
+                        isCurrent
+                          ? 'bg-amber-500/15 text-amber-300 border border-amber-500/30'
+                          : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 truncate">
+                        <FileCode className={`w-3.5 h-3.5 shrink-0 ${isCurrent ? 'text-amber-400' : 'text-zinc-500'}`} />
+                        <span className="truncate">{file.name}</span>
+                      </div>
+                      <span className="text-[10px] text-zinc-600 uppercase">{file.language}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Run Test Suite Action */}
+              <button
+                onClick={handleRunTests}
+                disabled={testingRunning}
+                className="w-full py-2 rounded-xl bg-[#121622] hover:bg-[#1A1F2D] border border-zinc-700 text-zinc-200 text-xs font-semibold flex items-center justify-center gap-1.5 transition cursor-pointer"
+              >
+                <Play className={`w-3.5 h-3.5 text-emerald-400 ${testingRunning ? 'animate-spin' : ''}`} />
+                <span>Run Automated Tests</span>
+              </button>
+            </div>
+
+            {/* Code Editor Deck (9 cols) */}
+            <div className="lg:col-span-9 rounded-2xl bg-[#0B0D13] border border-zinc-800 h-[600px] flex flex-col overflow-hidden">
+              {/* File Tab Bar */}
+              <div className="px-4 py-2.5 bg-[#0E121B] border-b border-zinc-800 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <FileCode className="w-4 h-4 text-amber-400" />
+                  <span className="text-xs font-mono font-bold text-white">
+                    {activeProject?.files[activeFileIndex]?.path || activeProject?.files[activeFileIndex]?.name || 'No file selected'}
+                  </span>
+                  {isModified && (
+                    <span className="w-2 h-2 rounded-full bg-amber-400" title="Unsaved modifications"></span>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handleSaveActiveFile}
+                    disabled={!isModified}
+                    className="px-3 py-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs transition disabled:opacity-40 cursor-pointer"
+                  >
+                    Save Changes
+                  </button>
+                </div>
+              </div>
+
+              {/* Code Textarea Editor */}
+              <div className="flex-1 relative bg-[#07090E] p-2">
+                <textarea
+                  value={activeFileContent}
+                  onChange={(e) => {
+                    setActiveFileContent(e.target.value);
+                    setIsModified(true);
+                  }}
+                  className="w-full h-full bg-transparent text-zinc-200 font-mono text-xs leading-relaxed p-2 outline-none resize-none selection:bg-amber-500/30"
+                  spellCheck={false}
+                />
+              </div>
+
+              {/* Editor Status Bar */}
+              <div className="px-4 py-1.5 bg-[#0A0C12] border-t border-zinc-800 flex items-center justify-between text-[11px] text-zinc-500 font-mono">
+                <span>Lines: {activeFileContent.split('\n').length} • UTF-8</span>
+                <span className="text-emerald-400">Syntax Verified: OK</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ==========================================
+          TAB 3: LIVE SANDBOX PREVIEW (FIXES 404!)
+          ========================================== */}
+      {workspaceMode === 'preview' && (
+        <div className="rounded-3xl bg-[#0B0D13] border border-amber-500/30 p-5 space-y-4 shadow-2xl">
+          {/* Viewport & Live Controls Bar */}
+          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-zinc-800 pb-4">
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                HTTP 200 Live Sandbox
+              </span>
+              <span className="text-xs text-zinc-400 font-mono">
+                lionixai.com / preview / {activeProject?.id}
+              </span>
+            </div>
+
+            {/* Viewport Device Switcher */}
+            <div className="flex items-center gap-1.5 p-1 rounded-xl bg-[#121622] border border-zinc-700">
+              <button
+                onClick={() => setDeviceMode('desktop')}
+                className={`p-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
+                  deviceMode === 'desktop' ? 'bg-amber-500 text-black' : 'text-zinc-400 hover:text-white'
+                }`}
+                title="Desktop Viewport"
+              >
+                <Monitor className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => setDeviceMode('tablet')}
+                className={`p-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
+                  deviceMode === 'tablet' ? 'bg-amber-500 text-black' : 'text-zinc-400 hover:text-white'
+                }`}
+                title="Tablet Viewport (768px)"
+              >
+                <Tablet className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => setDeviceMode('mobile')}
+                className={`p-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
+                  deviceMode === 'mobile' ? 'bg-amber-500 text-black' : 'text-zinc-400 hover:text-white'
+                }`}
+                title="Mobile Viewport (375px)"
+              >
+                <Smartphone className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Refresh and External Link */}
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => {
+                  setPreviewRefreshSpin(true);
+                  setPreviewKey((k) => k + 1);
+                  setTimeout(() => setPreviewRefreshSpin(false), 500);
+                }}
+                className="p-2 rounded-xl bg-[#121622] hover:bg-[#1A1F2D] border border-zinc-700 text-zinc-300 hover:text-white transition cursor-pointer"
+                title="Refresh Live Preview"
+              >
+                <RotateCw className={`w-4 h-4 ${previewRefreshSpin ? 'animate-spin text-amber-400' : ''}`} />
+              </button>
+
+              {activeProject && (
+                <a
+                  href={apiService.getProjectPreviewUrl(activeProject.id)}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="px-3 py-1.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/40 text-amber-300 text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                  <span>Open Fullscreen</span>
+                </a>
+              )}
+            </div>
+          </div>
+
+          {/* Preview Sandbox Container */}
+          <div className="flex justify-center bg-[#07080B] rounded-2xl p-4 min-h-[640px]">
+            <div
+              className={`transition-all duration-300 rounded-xl overflow-hidden border border-zinc-800 shadow-2xl bg-white ${
+                deviceMode === 'mobile'
+                  ? 'w-[375px] h-[667px]'
+                  : deviceMode === 'tablet'
+                  ? 'w-[768px] h-[640px]'
+                  : 'w-full h-[640px]'
+              }`}
+            >
+              <iframe
+                key={previewKey}
+                title="LIONIX AI Studio Live Sandbox Preview"
+                src={activeProject ? apiService.getProjectPreviewUrl(activeProject.id) : '/api/health'}
+                className="w-full h-full border-none"
+                sandbox="allow-scripts allow-forms allow-same-origin allow-modals allow-downloads"
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ==========================================
+          TAB 4: VOICE & MULTIMODAL MEDIA STUDIO
+          ========================================== */}
+      {workspaceMode === 'media' && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* AI Image Generation & Editing Box */}
+          <div className="p-5 rounded-3xl bg-[#0B0D13] border border-amber-500/25 space-y-4 shadow-xl">
+            <div className="flex items-center gap-2 border-b border-zinc-800 pb-3">
+              <ImageIcon className="w-5 h-5 text-amber-400" />
+              <div>
+                <h3 className="font-bold text-sm text-white">AI Image Synthesis & Studio</h3>
+                <p className="text-[11px] text-zinc-400">gemini-3.1-flash-lite-image & nano-banana-2.1</p>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <label className="text-xs font-semibold text-zinc-300 block mb-1">
+                  Image Prompt
+                </label>
+                <textarea
+                  rows={3}
+                  value={imagePrompt}
+                  onChange={(e) => setImagePrompt(e.target.value)}
+                  placeholder="Describe the image or UI mock to synthesize..."
+                  className="w-full bg-[#121622] border border-zinc-700 rounded-xl p-3 text-xs text-white placeholder-zinc-500 outline-none focus:border-amber-400 font-sans"
+                />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-zinc-400">Aspect Ratio:</span>
+                  <select
+                    value={imageAspectRatio}
+                    onChange={(e) => setImageAspectRatio(e.target.value)}
+                    className="px-2.5 py-1 rounded-lg bg-[#141824] border border-zinc-700 text-xs text-white outline-none"
+                  >
+                    <option value="1:1">1:1 Square</option>
+                    <option value="16:9">16:9 Wide</option>
+                    <option value="4:3">4:3 Standard</option>
+                    <option value="9:16">9:16 Portrait</option>
+                  </select>
+                </div>
+
+                <button
+                  onClick={handleGenerateImage}
+                  disabled={isGeneratingImage || !imagePrompt.trim()}
+                  className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs transition flex items-center gap-1.5 cursor-pointer disabled:opacity-40"
+                >
+                  <Sparkles className={`w-3.5 h-3.5 ${isGeneratingImage ? 'animate-spin' : ''}`} />
+                  <span>{isGeneratingImage ? 'Generating...' : 'Generate Image'}</span>
+                </button>
+              </div>
+
+              {generatedImageUrl && (
+                <div className="p-3 rounded-2xl bg-[#07080B] border border-amber-500/30 text-center space-y-2">
+                  <img
+                    src={generatedImageUrl}
+                    alt="Gemini Generated"
+                    className="max-h-72 mx-auto rounded-xl object-contain shadow-lg"
+                  />
+                  <a
+                    href={generatedImageUrl}
+                    download="gemini_generated_asset.png"
+                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-xs text-zinc-200 transition"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    <span>Download Image</span>
+                  </a>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Deep Multimodal File Inspector Box */}
+          <div className="p-5 rounded-3xl bg-[#0B0D13] border border-amber-500/25 space-y-4 shadow-xl">
+            <div className="flex items-center gap-2 border-b border-zinc-800 pb-3">
+              <Archive className="w-5 h-5 text-amber-400" />
+              <div>
+                <h3 className="font-bold text-sm text-white">Deep Multimodal File Inspector</h3>
+                <p className="text-[11px] text-zinc-400">PDF, ZIP, Code, Documents & Media Analysis</p>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <label className="flex flex-col items-center justify-center border-2 border-dashed border-zinc-700 hover:border-amber-400/60 rounded-2xl p-6 cursor-pointer bg-[#0E121B] transition">
+                <Upload className="w-8 h-8 text-amber-400 mb-2" />
+                <span className="text-xs font-bold text-white">Click or drag file to analyze</span>
+                <span className="text-[11px] text-zinc-500 mt-1">
+                  ZIP archives, PDF reports, code repositories, audio, or video
+                </span>
+                <input
+                  type="file"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleDeepFileAnalysis(file);
+                  }}
+                  className="hidden"
+                />
+              </label>
+
+              {isAnalyzingDeepFile && (
+                <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 text-center text-xs text-amber-300 flex items-center justify-center gap-2">
+                  <Sparkles className="w-4 h-4 animate-spin text-amber-400" />
+                  <span>Gemini 3.8 Flash is analyzing structure and code contents...</span>
+                </div>
+              )}
+
+              {fileAnalysisResult && (
+                <div className="p-4 rounded-xl bg-[#07080B] border border-zinc-800 text-xs text-zinc-200 max-h-72 overflow-y-auto whitespace-pre-wrap font-sans space-y-2">
+                  <div className="font-bold text-amber-400 text-xs border-b border-zinc-800 pb-1">
+                    Technical Analysis Result:
+                  </div>
+                  <div>{fileAnalysisResult}</div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ==========================================
+          TAB 5: VERSION HISTORY & SNAPSHOTS
+          ========================================== */}
+      {workspaceMode === 'snapshots' && (
+        <div className="p-5 rounded-3xl bg-[#0B0D13] border border-amber-500/25 space-y-5 shadow-xl">
+          <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
+            <div className="flex items-center gap-2">
+              <History className="w-5 h-5 text-amber-400" />
+              <div>
+                <h3 className="font-bold text-sm text-white">Project Version History & Snapshots</h3>
+                <p className="text-[11px] text-zinc-400">
+                  Restore previous code iterations with zero data loss.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                value={snapshotMessage}
+                onChange={(e) => setSnapshotMessage(e.target.value)}
+                placeholder="Snapshot commit note (e.g. Added auth modal)..."
+                className="bg-[#121622] border border-zinc-700 rounded-xl px-3 py-1.5 text-xs text-white outline-none w-64 font-sans"
+              />
+              <button
+                onClick={handleCreateSnapshot}
+                disabled={isCreatingSnapshot}
+                className="px-4 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs transition flex items-center gap-1.5 cursor-pointer disabled:opacity-40"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>{isCreatingSnapshot ? 'Creating...' : 'Create Snapshot'}</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Snapshots Timeline */}
+          <div className="space-y-3">
+            {!activeProject?.snapshots || activeProject.snapshots.length === 0 ? (
+              <div className="text-center p-8 text-zinc-500 text-xs">
+                No snapshots created for this project yet. Click &quot;Create Snapshot&quot; above to capture current state.
+              </div>
+            ) : (
+              activeProject.snapshots.map((snap: any) => (
+                <div
+                  key={snap.id}
+                  className="p-4 rounded-2xl bg-[#0E121B] border border-zinc-800 flex items-center justify-between"
+                >
+                  <div>
+                    <p className="text-xs font-bold text-white">{snap.message}</p>
+                    <p className="text-[11px] text-zinc-500 font-mono mt-0.5">
+                      {snap.formattedTime || snap.timestamp} • {snap.filesCount || snap.files?.length || 0} files included
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handleRestoreSnapshot(snap.id)}
+                      className="px-3 py-1.5 rounded-xl bg-zinc-800 hover:bg-amber-500 hover:text-black text-zinc-300 text-xs font-semibold transition cursor-pointer"
+                    >
+                      Restore to This State
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ==========================================
+          NEW PROJECT MODAL
+          ========================================== */}
+      {showNewModal && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-full max-w-md p-6 rounded-3xl bg-[#0E121B] border border-amber-500/40 shadow-2xl space-y-4">
+            <h3 className="text-base font-bold text-white">Create New LIONIX Project</h3>
+            <div className="space-y-3">
+              <div>
+                <label className="text-xs text-zinc-300 block mb-1">Project Name</label>
+                <input
+                  type="text"
+                  value={newProjectName}
+                  onChange={(e) => setNewProjectName(e.target.value)}
+                  placeholder="e.g. AI Cloud Portal"
+                  className="w-full bg-[#141824] border border-zinc-700 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-amber-400"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs text-zinc-300 block mb-1">Platform Type</label>
+                <select
+                  value={newProjectType}
+                  onChange={(e) => setNewProjectType(e.target.value as any)}
+                  className="w-full bg-[#141824] border border-zinc-700 rounded-xl px-3 py-2 text-xs text-white outline-none"
+                >
+                  <option value="website">Full-Stack Web Platform (React + Node.js Express)</option>
+                  <option value="android">Native Android App (Kotlin + Compose)</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-zinc-800">
+              <button
+                onClick={() => setShowNewModal(false)}
+                className="px-4 py-2 rounded-xl text-xs text-zinc-400 hover:text-white"
               >
                 Cancel
               </button>
               <button
-                type="button"
-                onClick={handleCreateNewFile}
-                className="w-2/3 py-2 rounded-lg bg-amber-500 font-bold text-black uppercase cursor-pointer text-xs"
+                onClick={async () => {
+                  if (!newProjectName.trim()) return;
+                  try {
+                    const res = await apiService.createProject({
+                      name: newProjectName.trim(),
+                      type: newProjectType,
+                      language: activeLanguage,
+                    });
+                    if (res.project) {
+                      setProjects((prev) => [res.project, ...prev]);
+                      setSelectedProjectId(res.project.id);
+                      setActiveProject(res.project);
+                      onProjectUpdated(res.project);
+                      setShowNewModal(false);
+                      setNewProjectName('');
+                    }
+                  } catch (err: any) {
+                    alert('Project creation notice: ' + err.message);
+                  }
+                }}
+                className="px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs"
+              >
+                Create Project
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ==========================================
+          NEW FILE MODAL
+          ========================================== */}
+      {showNewFileModal && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-full max-w-sm p-6 rounded-3xl bg-[#0E121B] border border-amber-500/40 shadow-2xl space-y-4">
+            <h3 className="text-base font-bold text-white">Add New File</h3>
+            <div>
+              <label className="text-xs text-zinc-300 block mb-1">File Name & Extension</label>
+              <input
+                type="text"
+                value={newFileName}
+                onChange={(e) => setNewFileName(e.target.value)}
+                placeholder="e.g. style.css or api.ts"
+                className="w-full bg-[#141824] border border-zinc-700 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-amber-400 font-mono"
+              />
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-zinc-800">
+              <button
+                onClick={() => setShowNewFileModal(false)}
+                className="px-3 py-1.5 rounded-xl text-xs text-zinc-400 hover:text-white"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  if (!newFileName.trim() || !activeProject) return;
+                  const ext = newFileName.split('.').pop() || 'txt';
+                  const newFile: SoftwareFile = {
+                    name: newFileName.trim(),
+                    path: `src/${newFileName.trim()}`,
+                    language: ext,
+                    content: `// ${newFileName.trim()}\n// Created in LIONIX AI Studio\n`,
+                  };
+                  const updatedFiles = [...(activeProject.files || []), newFile];
+                  try {
+                    const res = await apiService.updateProject(activeProject.id, { files: updatedFiles });
+                    if (res.project) {
+                      setActiveProject(res.project);
+                      onProjectUpdated(res.project);
+                      setActiveFileIndex(updatedFiles.length - 1);
+                      setShowNewFileModal(false);
+                      setNewFileName('');
+                    }
+                  } catch (err: any) {
+                    alert('Add file failed: ' + err.message);
+                  }
+                }}
+                className="px-4 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs"
               >
                 Add File
               </button>

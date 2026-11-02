@@ -1080,4 +1080,154 @@ export const apiService = {
       body: JSON.stringify({ domain }),
     });
   },
+
+  // ==========================================
+  // Google Gemini Developer API Client Services
+  // ==========================================
+  async getGeminiModels(): Promise<{ success: boolean; apiKeyConfigured: boolean; defaultModel: string; models: any[] }> {
+    return this.fetchWithAuth('/api/gemini/models');
+  },
+
+  async streamGeminiChat(
+    payload: {
+      model?: string;
+      messages: any[];
+      systemInstruction?: string;
+      thinkingLevel?: string;
+      jsonMode?: boolean;
+    },
+    onChunk: (text: string) => void,
+    onDone: () => void,
+    onError: (err: any) => void,
+    signal?: AbortSignal
+  ): Promise<void> {
+    try {
+      const response = await fetch(`${API_BASE}/api/gemini/stream`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(this.hasToken() ? { Authorization: `Bearer ${this.getToken()}` } : {}),
+        },
+        body: JSON.stringify(payload),
+        signal,
+      });
+
+      if (!response.ok) {
+        const errJson = await response.json().catch(() => ({}));
+        throw new Error(errJson.error || `Server responded with ${response.status}`);
+      }
+
+      if (!response.body) {
+        throw new Error('No readable response body');
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (trimmed.startsWith('data: ')) {
+            const dataStr = trimmed.substring(6).trim();
+            if (dataStr === '[DONE]') {
+              onDone();
+              return;
+            }
+            try {
+              const parsed = JSON.parse(dataStr);
+              if (parsed.error) {
+                onError(new Error(parsed.error));
+                return;
+              }
+              if (parsed.text) {
+                onChunk(parsed.text);
+              }
+            } catch (_) {}
+          }
+        }
+      }
+
+      onDone();
+    } catch (err: any) {
+      if (err.name === 'AbortError') {
+        onDone();
+      } else {
+        onError(err);
+      }
+    }
+  },
+
+  async sendGeminiChat(data: any): Promise<any> {
+    return this.fetchWithAuth('/api/gemini/chat', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  async transcribeAudio(data: { audioBase64: string; mimeType?: string; prompt?: string }): Promise<{ success: boolean; transcript: string }> {
+    return this.fetchWithAuth('/api/gemini/transcribe', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  async generateSpeech(data: { text: string; voiceName?: string; style?: string }): Promise<{ success: boolean; audioBase64: string; voiceName: string }> {
+    return this.fetchWithAuth('/api/gemini/tts', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  async generateImage(data: { prompt: string; aspectRatio?: string; referenceImageBase64?: string }): Promise<{ success: boolean; imageUrl: string }> {
+    return this.fetchWithAuth('/api/gemini/generate-image', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  async analyzeFile(data: { fileName: string; mimeType: string; base64Data?: string; textContent?: string; prompt?: string }): Promise<any> {
+    return this.fetchWithAuth('/api/gemini/analyze-file', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  async synthesizeApp(data: { projectId?: string; prompt: string; language?: string; targetPlatform?: string }): Promise<any> {
+    return this.fetchWithAuth('/api/gemini/synthesize-app', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  getProjectPreviewUrl(projectId: string): string {
+    return `${API_BASE}/api/projects/${projectId}/preview`;
+  },
+
+  async createProjectSnapshot(projectId: string, message: string): Promise<any> {
+    return this.fetchWithAuth(`/api/projects/${projectId}/snapshot`, {
+      method: 'POST',
+      body: JSON.stringify({ message }),
+    });
+  },
+
+  async restoreProjectSnapshot(projectId: string, snapshotId: string): Promise<any> {
+    return this.fetchWithAuth(`/api/projects/${projectId}/restore-snapshot`, {
+      method: 'POST',
+      body: JSON.stringify({ snapshotId }),
+    });
+  },
+
+  async duplicateProject(projectId: string): Promise<any> {
+    return this.fetchWithAuth(`/api/projects/${projectId}/duplicate`, {
+      method: 'POST',
+    });
+  },
 };

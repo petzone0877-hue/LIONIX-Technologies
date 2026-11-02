@@ -4,7 +4,7 @@ import {
   File,
   FileText,
   FileArchive,
-  Image,
+  Image as ImageIcon,
   Video,
   Music,
   CheckCircle2,
@@ -12,7 +12,9 @@ import {
   Download,
   Eye,
   RefreshCw,
+  Sparkles,
 } from 'lucide-react';
+import { apiService } from '../services/api';
 
 interface UploadedFileItem {
   id: string;
@@ -22,6 +24,8 @@ interface UploadedFileItem {
   uploadedAt: string;
   status: 'uploaded' | 'uploading';
   progress: number;
+  dataBase64?: string;
+  analysis?: string;
 }
 
 export const FileUploadCenter: React.FC = () => {
@@ -55,52 +59,67 @@ export const FileUploadCenter: React.FC = () => {
     },
   ]);
   const [isUploading, setIsUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
+  const [analyzingId, setAnalyzingId] = useState<string | null>(null);
+  const [selectedAnalysis, setSelectedAnalysis] = useState<{ name: string; text: string } | null>(null);
 
-  const handleSimulateUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = e.target.files;
     if (!selectedFiles || selectedFiles.length === 0) return;
 
-    const file = selectedFiles[0];
-    const newId = `f-${Date.now()}`;
-    const newFileItem: UploadedFileItem = {
-      id: newId,
-      name: file.name,
-      size: `${(file.size / (1024 * 1024)).toFixed(1)} MB`,
-      type: file.type || 'file',
-      uploadedAt: 'Just now',
-      status: 'uploading',
-      progress: 15,
-    };
+    Array.from(selectedFiles).forEach((file) => {
+      const newId = `f-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+      const reader = new FileReader();
 
-    setFiles([newFileItem, ...files]);
-    setIsUploading(true);
+      reader.onload = () => {
+        const base64Data = reader.result as string;
+        const newFileItem: UploadedFileItem = {
+          id: newId,
+          name: file.name,
+          size: `${(file.size / (1024 * 1024)).toFixed(2)} MB`,
+          type: file.type || 'application/octet-stream',
+          uploadedAt: 'Just now',
+          status: 'uploaded',
+          progress: 100,
+          dataBase64: base64Data,
+        };
 
-    // Chunked progress simulation
-    let currentProg = 15;
-    const interval = setInterval(() => {
-      currentProg += 25;
-      if (currentProg >= 100) {
-        currentProg = 100;
-        clearInterval(interval);
-        setIsUploading(false);
+        setFiles((prev) => [newFileItem, ...prev]);
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleAnalyzeFileWithGemini = async (file: UploadedFileItem) => {
+    setAnalyzingId(file.id);
+    try {
+      const res = await apiService.analyzeFile({
+        fileName: file.name,
+        mimeType: file.type,
+        base64Data: file.dataBase64,
+        prompt:
+          'Conduct a comprehensive structural and technical inspection of this uploaded file. Identify security posture, technology stack, architecture patterns, and provide actionable recommendations.',
+      });
+
+      if (res.analysis) {
         setFiles((prev) =>
-          prev.map((f) => (f.id === newId ? { ...f, status: 'uploaded', progress: 100 } : f))
+          prev.map((f) => (f.id === file.id ? { ...f, analysis: res.analysis } : f))
         );
-      } else {
-        setFiles((prev) =>
-          prev.map((f) => (f.id === newId ? { ...f, progress: currentProg } : f))
-        );
+        setSelectedAnalysis({ name: file.name, text: res.analysis });
       }
-    }, 300);
+    } catch (err: any) {
+      alert('File analysis notice: ' + err.message);
+    } finally {
+      setAnalyzingId(null);
+    }
   };
 
   const getFileIcon = (name: string) => {
     if (name.endsWith('.zip') || name.endsWith('.aab') || name.endsWith('.apk')) return FileArchive;
-    if (name.endsWith('.png') || name.endsWith('.jpg') || name.endsWith('.svg')) return Image;
-    if (name.endsWith('.mp4') || name.endsWith('.mov')) return Video;
+    if (name.endsWith('.png') || name.endsWith('.jpg') || name.endsWith('.jpeg') || name.endsWith('.webp') || name.endsWith('.svg')) return ImageIcon;
+    if (name.endsWith('.mp4') || name.endsWith('.webm') || name.endsWith('.mov')) return Video;
     if (name.endsWith('.mp3') || name.endsWith('.wav')) return Music;
-    return FileText;
+    if (name.endsWith('.pdf') || name.endsWith('.doc') || name.endsWith('.docx') || name.endsWith('.txt')) return FileText;
+    return File;
   };
 
   return (
@@ -110,50 +129,75 @@ export const FileUploadCenter: React.FC = () => {
         <div>
           <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-bold uppercase tracking-wider mb-2">
             <UploadCloud className="w-3.5 h-3.5" />
-            <span>Chunked Multi-Format Asset Storage</span>
+            <span>Multimodal Ingest & Analysis Hub</span>
           </div>
           <h1 className="font-cinzel text-2xl md:text-3xl font-black text-white">
-            File Upload & Asset Storage Center
+            File Upload & Intelligence Center
           </h1>
           <p className="text-xs sm:text-sm text-zinc-400 mt-1 max-w-2xl leading-relaxed">
-            Upload images, videos, audio, PDF, ZIP, APK/AAB packages, spreadsheets, and source code.
-            Includes automated integrity verification and chunked transfer.
+            Upload images, PDFs, ZIP archives, source code files, documents, audio, and videos.
+            Equipped with autonomous Google Gemini 3.8 Flash multimodal analysis and inspection.
           </p>
         </div>
       </div>
 
-      {/* Drag & Drop Upload Dropzone */}
-      <div className="p-8 rounded-3xl bg-[#0B0D13] border-2 border-dashed border-amber-500/40 hover:border-amber-400 transition flex flex-col items-center justify-center text-center space-y-3 relative group">
-        <input
-          type="file"
-          onChange={handleSimulateUpload}
-          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-        />
-        <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 group-hover:scale-105 transition">
+      {/* Drag & Drop Upload Zone */}
+      <div className="p-8 rounded-3xl bg-[#0B0D13] border-2 border-dashed border-zinc-800 hover:border-amber-400/50 transition duration-300 text-center flex flex-col items-center justify-center space-y-4 shadow-xl">
+        <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
           <UploadCloud className="w-8 h-8" />
         </div>
         <div>
-          <h3 className="font-cinzel text-sm font-bold text-white">
-            Click to Browse or Drag & Drop Files Here
+          <h3 className="font-cinzel font-bold text-white text-base">
+            Drag & Drop Files or Browse Storage
           </h3>
           <p className="text-xs text-zinc-400 mt-1">
-            Supports APK, AAB, ZIP, PNG, MP4, MP3, PDF, DOCX, XLSX, and Source Code archives
+            PNG, JPG, WEBP, PDF, ZIP, HTML, CSS, JS, JSON, TXT, DOC, DOCX, MP3, WAV, MP4
           </p>
         </div>
-        <span className="px-3 py-1 rounded-full bg-[#12151F] text-zinc-400 text-[10px] font-mono">
-          Maximum file size: 500 MB per chunk
-        </span>
+
+        <label className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-extrabold text-xs uppercase tracking-wider shadow-lg shadow-amber-500/20 transition cursor-pointer">
+          <span>Choose Files to Upload</span>
+          <input
+            type="file"
+            onChange={handleUpload}
+            multiple
+            className="hidden"
+            accept="image/*,.pdf,.zip,.html,.css,.js,.ts,.tsx,.json,.txt,.doc,.docx,.mp3,.wav,.mp4"
+          />
+        </label>
       </div>
 
-      {/* Uploaded Files Table */}
-      <div className="p-6 rounded-3xl bg-[#0B0D13] border border-zinc-800 space-y-4">
+      {/* Analysis Modal/Drawer */}
+      {selectedAnalysis && (
+        <div className="p-5 rounded-3xl bg-[#0E121B] border border-amber-500/40 shadow-2xl space-y-3 animate-in fade-in">
+          <div className="flex items-center justify-between border-b border-zinc-800 pb-2">
+            <span className="text-xs font-bold text-amber-400 font-mono">
+              Gemini Analysis: {selectedAnalysis.name}
+            </span>
+            <button
+              onClick={() => setSelectedAnalysis(null)}
+              className="text-xs text-zinc-400 hover:text-white"
+            >
+              Close ✕
+            </button>
+          </div>
+          <div className="text-xs text-zinc-200 whitespace-pre-wrap font-sans max-h-96 overflow-y-auto leading-relaxed">
+            {selectedAnalysis.text}
+          </div>
+        </div>
+      )}
+
+      {/* Stored Files List */}
+      <div className="space-y-4">
         <h3 className="font-cinzel text-sm font-bold text-white">
-          Stored Files & Deliverable Packages ({files.length})
+          Stored Files & Multimodal Packages ({files.length})
         </h3>
 
         <div className="space-y-2">
           {files.map((file) => {
             const Icon = getFileIcon(file.name);
+            const isAnalyzing = analyzingId === file.id;
+
             return (
               <div
                 key={file.id}
@@ -171,37 +215,41 @@ export const FileUploadCenter: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3 shrink-0">
-                  {file.status === 'uploading' ? (
-                    <div className="flex items-center gap-2">
-                      <div className="w-24 bg-zinc-800 h-1.5 rounded-full overflow-hidden">
-                        <div
-                          className="bg-amber-500 h-full transition-all duration-300"
-                          style={{ width: `${file.progress}%` }}
-                        ></div>
-                      </div>
-                      <span className="text-[10px] text-amber-400 font-mono">{file.progress}%</span>
-                    </div>
-                  ) : (
-                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
-                      <CheckCircle2 className="w-3 h-3" /> Stored
-                    </span>
-                  )}
+                <div className="flex items-center gap-2 shrink-0">
+                  {/* Gemini Analyze Button */}
+                  <button
+                    onClick={() => handleAnalyzeFileWithGemini(file)}
+                    disabled={isAnalyzing}
+                    className="px-3 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-300 text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer disabled:opacity-50"
+                  >
+                    <Sparkles className={`w-3.5 h-3.5 ${isAnalyzing ? 'animate-spin' : ''}`} />
+                    <span>{isAnalyzing ? 'Analyzing...' : file.analysis ? 'View Analysis' : 'Analyze with Gemini'}</span>
+                  </button>
 
+                  {/* Download button */}
                   <button
                     onClick={() => {
-                      // Trigger download of mock asset
-                      const blob = new Buffer(`LIONIX ASSET FILE: ${file.name}`);
-                      const url = URL.createObjectURL(new Blob([blob]));
+                      const blob = new Blob([file.dataBase64 || `LIONIX ASSET FILE: ${file.name}`], { type: file.type });
+                      const url = URL.createObjectURL(blob);
                       const a = document.createElement('a');
                       a.href = url;
                       a.download = file.name;
                       a.click();
+                      URL.revokeObjectURL(url);
                     }}
-                    className="p-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white transition"
+                    className="p-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white transition cursor-pointer"
                     title="Download file"
                   >
                     <Download className="w-3.5 h-3.5" />
+                  </button>
+
+                  {/* Delete button */}
+                  <button
+                    onClick={() => setFiles((prev) => prev.filter((f) => f.id !== file.id))}
+                    className="p-2 rounded-lg bg-zinc-800 hover:bg-red-500/20 text-zinc-400 hover:text-red-400 transition cursor-pointer"
+                    title="Delete file"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
                   </button>
                 </div>
               </div>

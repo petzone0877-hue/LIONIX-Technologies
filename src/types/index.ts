@@ -98,8 +98,16 @@ export interface SoftwareProject {
   signingAlias?: string;
   // Testing & Quality Assurance
   testResults?: Array<{ name: string; status: 'passed' | 'failed'; durationMs: number; details?: string }>;
-  // Iterative History
+  // Iterative History & Snapshots
   history?: Array<{ timestamp: string; prompt: string; action: string; filesChanged: number }>;
+  snapshots?: Array<{
+    id: string;
+    timestamp: string;
+    formattedTime: string;
+    message: string;
+    filesCount: number;
+    files: SoftwareFile[];
+  }>;
 }
 
 export interface ServerNode {
