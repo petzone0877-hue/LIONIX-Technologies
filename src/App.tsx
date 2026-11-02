@@ -22,6 +22,7 @@ import { AITestingDebugger } from './components/AITestingDebugger';
 import { AIStudioWorkspace } from './components/AIStudioWorkspace';
 import { ProjectDashboard } from './components/ProjectDashboard';
 import { PublicVerificationProfile } from './components/PublicVerificationProfile';
+import { StaffLogin } from './components/StaffLogin';
 
 import { CompanyInfo, UserSession, AIDepartment, SoftwareProject, StaffMember } from './types';
 import { apiService } from './services/api';
@@ -32,6 +33,12 @@ export default function App() {
   const [currentTab, setCurrentTab] = useState<string>('ai-studio');
   const [activeLanguage, setActiveLanguage] = useState<'en' | 'bn'>('en');
   const [publicProfileStaffId, setPublicProfileStaffId] = useState<string | null>(null);
+  const [isAdminRoute, setIsAdminRoute] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      return window.location.pathname === '/admin' || window.location.pathname.startsWith('/admin');
+    }
+    return false;
+  });
 
   // Core Company Profile State (with uploaded official logo)
   const [company, setCompany] = useState<CompanyInfo>({
@@ -65,7 +72,7 @@ export default function App() {
   const [currentProject, setCurrentProject] = useState<SoftwareProject | null>(null);
   const [selectedStaffForIdCard, setSelectedStaffForIdCard] = useState<StaffMember | null>(null);
 
-  // 1. Check for public verification profile QR scan URL (?publicProfile=LNX-...)
+  // 1. Check for public verification profile QR scan URL (?publicProfile=LNX-...) and /admin route
   useEffect(() => {
     try {
       const params = new URLSearchParams(window.location.search);
@@ -74,7 +81,20 @@ export default function App() {
         setPublicProfileStaffId(profileId);
       }
     } catch (_) {}
+
+    const handleLocationChange = () => {
+      const isAdm = window.location.pathname === '/admin' || window.location.pathname.startsWith('/admin');
+      setIsAdminRoute(isAdm);
+    };
+
+    window.addEventListener('popstate', handleLocationChange);
+    return () => window.removeEventListener('popstate', handleLocationChange);
   }, []);
+
+  const navigateTo = (path: string) => {
+    window.history.pushState({}, '', path);
+    setIsAdminRoute(path === '/admin' || path.startsWith('/admin'));
+  };
 
   // 2. Initial Auth & Company Profile Check
   useEffect(() => {
@@ -175,9 +195,24 @@ export default function App() {
     );
   }
 
-  // STRICT RULE: If not authenticated, render ONLY the full-screen Private Portal Login Page!
-  // Absolutely no internal company data, dashboard, sidebar, overview, or records are accessible!
+  // STRICT RULE: If not authenticated, render the dedicated portal login page!
+  // URL: https://lionixai.com/admin -> Dedicated Staff Login Portal (Staff ID + Password)
+  // URL: https://lionixai.com/ -> Sovereign Executive Owner Portal (Gmail + Owner Password)
   if (!user) {
+    if (isAdminRoute) {
+      return (
+        <StaffLogin
+          company={company}
+          onLoginSuccess={(authenticatedUser) => {
+            setUser(authenticatedUser);
+          }}
+          language={activeLanguage}
+          onToggleLanguage={() => setActiveLanguage((prev) => (prev === 'en' ? 'bn' : 'en'))}
+          onSwitchToOwner={() => navigateTo('/')}
+        />
+      );
+    }
+
     return (
       <PrivatePortalLogin
         company={company}
@@ -186,6 +221,7 @@ export default function App() {
         }}
         language={activeLanguage}
         onToggleLanguage={() => setActiveLanguage((prev) => (prev === 'en' ? 'bn' : 'en'))}
+        onSwitchToStaff={() => navigateTo('/admin')}
       />
     );
   }

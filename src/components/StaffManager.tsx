@@ -23,6 +23,7 @@ import {
   Edit,
   Trash2,
   Camera,
+  Copy,
 } from 'lucide-react';
 
 interface StaffManagerProps {
@@ -57,6 +58,98 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
   const [photoPreview, setPhotoPreview] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Password Reset Modal State
+  const [resetModalStaff, setResetModalStaff] = useState<StaffMember | null>(null);
+  const [resetNewPassword, setResetNewPassword] = useState('');
+  const [resetConfirmPassword, setResetConfirmPassword] = useState('');
+  const [isResetting, setIsResetting] = useState(false);
+  const [resetSuccessDetails, setResetSuccessDetails] = useState<{ staffId: string; password: string } | null>(null);
+  const [copyNotice, setCopyNotice] = useState(false);
+
+  const handleGenerateRandomPassword = () => {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@#$%';
+    let pw = '';
+    for (let i = 0; i < 10; i++) {
+      pw += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    setResetNewPassword(pw);
+    setResetConfirmPassword(pw);
+  };
+
+  const handleResetPasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!resetModalStaff) return;
+    if (!resetNewPassword || resetNewPassword.length < 6) {
+      alert('Password must be at least 6 characters long.');
+      return;
+    }
+    if (resetNewPassword !== resetConfirmPassword) {
+      alert('Passwords do not match.');
+      return;
+    }
+
+    setIsResetting(true);
+    try {
+      const res = await apiService.resetStaffPassword(resetModalStaff.staffId, resetNewPassword);
+      setResetSuccessDetails({
+        staffId: resetModalStaff.staffId,
+        password: resetNewPassword,
+      });
+      setFeedback(res.message || `Password for ${resetModalStaff.name} successfully reset!`);
+      setTimeout(() => setFeedback(''), 6000);
+    } catch (err: any) {
+      alert(`Reset failed: ${err.message || 'Unknown error'}`);
+    } finally {
+      setIsResetting(false);
+    }
+  };
+
+  const handleToggleStatus = async (member: StaffMember) => {
+    if (member.role === 'Company Owner') {
+      alert('Security Policy: Company Owner account cannot be suspended.');
+      return;
+    }
+    const newStatus = member.status === 'suspended' ? 'active' : 'suspended';
+    const confirmMsg =
+      newStatus === 'suspended'
+        ? `Are you sure you want to suspend staff member ${member.name} (${member.staffId})? They will immediately lose login access.`
+        : `Reactivate staff member ${member.name} (${member.staffId})?`;
+
+    if (!window.confirm(confirmMsg)) return;
+
+    try {
+      await apiService.toggleStaffStatus(member.id, newStatus);
+      setStaff((prev) => prev.map((s) => (s.id === member.id ? { ...s, status: newStatus } : s)));
+      setFeedback(`Staff member ${member.name} (${member.staffId}) is now ${newStatus.toUpperCase()}.`);
+      setTimeout(() => setFeedback(''), 5000);
+    } catch (err: any) {
+      alert(`Status update failed: ${err.message || 'Unknown error'}`);
+    }
+  };
+
+  const handleDeleteStaff = async (member: StaffMember) => {
+    if (member.role === 'Company Owner') {
+      alert('Security Policy: Company Owner account cannot be deleted.');
+      return;
+    }
+    if (
+      !window.confirm(
+        `Are you sure you want to PERMANENTLY delete staff member ${member.name} (${member.staffId}) and their ID card? This cannot be undone.`
+      )
+    ) {
+      return;
+    }
+
+    try {
+      await apiService.deleteStaff(member.id);
+      setStaff((prev) => prev.filter((s) => s.id !== member.id && s.staffId !== member.staffId));
+      setFeedback(`Staff member ${member.name} (${member.staffId}) was removed from company records.`);
+      setTimeout(() => setFeedback(''), 5000);
+    } catch (err: any) {
+      alert(`Deletion failed: ${err.message || 'Unknown error'}`);
+    }
+  };
 
   const fetchStaffData = async () => {
     setIsLoading(true);
@@ -509,24 +602,84 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
             </div>
 
             {/* Bottom Actions: Management Only for ID Card generation & editing */}
-            <div className="pt-3 border-t border-zinc-800">
+            <div className="pt-3 border-t border-zinc-800 space-y-2">
               {isOwnerOrSuperAdmin ? (
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    onClick={() => onSelectIdCard(member, 'view')}
-                    className="py-2 px-2 rounded-xl bg-zinc-800/90 hover:bg-zinc-700 text-zinc-200 text-[11px] font-bold uppercase tracking-wider transition flex items-center justify-center gap-1 border border-zinc-700/80 cursor-pointer"
-                  >
-                    <CreditCard className="w-3.5 h-3.5 text-amber-400" />
-                    <span>View Card</span>
-                  </button>
-                  <button
-                    onClick={() => onSelectIdCard(member, 'edit')}
-                    className="py-2 px-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:brightness-110 text-black text-[11px] font-extrabold uppercase tracking-wider transition flex items-center justify-center gap-1 shadow-md shadow-amber-500/15 cursor-pointer"
-                  >
-                    <Edit className="w-3.5 h-3.5" />
-                    <span>Edit ID Card</span>
-                  </button>
-                </div>
+                <>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      onClick={() => onSelectIdCard(member, 'view')}
+                      className="py-2 px-2 rounded-xl bg-zinc-800/90 hover:bg-zinc-700 text-zinc-200 text-[11px] font-bold uppercase tracking-wider transition flex items-center justify-center gap-1 border border-zinc-700/80 cursor-pointer"
+                    >
+                      <CreditCard className="w-3.5 h-3.5 text-amber-400" />
+                      <span>View Card</span>
+                    </button>
+                    <button
+                      onClick={() => onSelectIdCard(member, 'edit')}
+                      className="py-2 px-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:brightness-110 text-black text-[11px] font-extrabold uppercase tracking-wider transition flex items-center justify-center gap-1 shadow-md shadow-amber-500/15 cursor-pointer"
+                    >
+                      <Edit className="w-3.5 h-3.5" />
+                      <span>Edit ID Card</span>
+                    </button>
+                  </div>
+
+                  {/* Owner Controls: Password Reset & Status Toggle */}
+                  <div className="grid grid-cols-2 gap-2 pt-1">
+                    <button
+                      onClick={() => {
+                        setResetModalStaff(member);
+                        setResetSuccessDetails(null);
+                        setResetNewPassword('');
+                        setResetConfirmPassword('');
+                      }}
+                      className="py-1.5 px-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 text-[10px] font-bold uppercase tracking-wider transition flex items-center justify-center gap-1 border border-amber-500/30 cursor-pointer"
+                      title="Reset Staff Password"
+                    >
+                      <KeyRound className="w-3 h-3 text-amber-400" />
+                      <span>Reset Pass</span>
+                    </button>
+
+                    {member.role !== 'Company Owner' ? (
+                      <button
+                        onClick={() => handleToggleStatus(member)}
+                        className={`py-1.5 px-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition flex items-center justify-center gap-1 border cursor-pointer ${
+                          member.status === 'suspended'
+                            ? 'bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+                            : 'bg-red-500/10 hover:bg-red-500/20 text-red-300 border-red-500/30'
+                        }`}
+                        title={member.status === 'suspended' ? 'Reactivate Staff Access' : 'Suspend Staff Access'}
+                      >
+                        {member.status === 'suspended' ? (
+                          <>
+                            <UserCheck className="w-3 h-3 text-emerald-400" />
+                            <span>Activate</span>
+                          </>
+                        ) : (
+                          <>
+                            <UserX className="w-3 h-3 text-red-400" />
+                            <span>Suspend</span>
+                          </>
+                        )}
+                      </button>
+                    ) : (
+                      <div className="py-1.5 px-2 rounded-xl bg-zinc-900 border border-zinc-800 text-[10px] text-zinc-500 text-center font-bold uppercase">
+                        Owner
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Delete button if Owner */}
+                  {user?.isOwner && member.role !== 'Company Owner' && (
+                    <div className="pt-1">
+                      <button
+                        onClick={() => handleDeleteStaff(member)}
+                        className="w-full py-1 rounded-lg text-zinc-500 hover:text-red-400 text-[10px] transition flex items-center justify-center gap-1 hover:bg-red-500/5 cursor-pointer"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                        <span>Delete Staff Record</span>
+                      </button>
+                    </div>
+                  )}
+                </>
               ) : (
                 <div className="w-full p-2 rounded-xl bg-zinc-900 border border-zinc-800 text-[10px] text-zinc-500 text-center flex items-center justify-center gap-1.5">
                   <Lock className="w-3 h-3 text-amber-500/60" />
@@ -537,6 +690,161 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
           </div>
         ))}
       </div>
+
+      {/* Password Reset Modal */}
+      {resetModalStaff && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in">
+          <div className="bg-[#0B0D13] border border-amber-500/40 rounded-3xl w-full max-w-md p-6 space-y-4 shadow-2xl relative">
+            <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
+              <div className="flex items-center gap-2">
+                <KeyRound className="w-4 h-4 text-amber-400" />
+                <h3 className="font-cinzel font-bold text-sm text-white">Reset Staff Password</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setResetModalStaff(null);
+                  setResetSuccessDetails(null);
+                  setResetNewPassword('');
+                  setResetConfirmPassword('');
+                }}
+                className="text-zinc-500 hover:text-white"
+              >
+                ✕
+              </button>
+            </div>
+
+            {resetSuccessDetails ? (
+              <div className="space-y-4 py-2">
+                <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs space-y-2">
+                  <div className="flex items-center gap-2 font-bold text-sm">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                    <span>Password Successfully Reset!</span>
+                  </div>
+                  <p className="text-[11px] text-zinc-300">
+                    The permanent password for staff member <strong className="text-white">{resetModalStaff.name}</strong> has been updated in the database.
+                  </p>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-[#12151F] border border-amber-500/30 space-y-2">
+                  <p className="text-[10px] text-zinc-400 uppercase tracking-wider font-bold">New Staff Login Credentials</p>
+                  <div className="flex items-center justify-between text-xs font-mono">
+                    <span className="text-zinc-400">Staff Login URL:</span>
+                    <span className="text-amber-400 font-bold">https://lionixai.com/admin</span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs font-mono">
+                    <span className="text-zinc-400">Staff ID (Login ID):</span>
+                    <span className="text-white font-bold">{resetSuccessDetails.staffId}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs font-mono">
+                    <span className="text-zinc-400">New Password:</span>
+                    <span className="text-emerald-400 font-bold">{resetSuccessDetails.password}</span>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    const textToCopy = `LIONIX Staff Login Credentials:\nURL: https://lionixai.com/admin\nStaff ID: ${resetSuccessDetails.staffId}\nPassword: ${resetSuccessDetails.password}`;
+                    navigator.clipboard.writeText(textToCopy);
+                    setCopyNotice(true);
+                    setTimeout(() => setCopyNotice(false), 3000);
+                  }}
+                  className="w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-extrabold text-xs uppercase tracking-wider transition flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <Copy className="w-3.5 h-3.5" />
+                  <span>{copyNotice ? 'Credentials Copied to Clipboard!' : 'Copy Login Details to Clipboard'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setResetModalStaff(null);
+                    setResetSuccessDetails(null);
+                  }}
+                  className="w-full py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-semibold transition"
+                >
+                  Done
+                </button>
+              </div>
+            ) : (
+              <form onSubmit={handleResetPasswordSubmit} className="space-y-4">
+                <div className="p-3 rounded-2xl bg-zinc-900 border border-zinc-800 text-xs space-y-1">
+                  <div className="flex justify-between">
+                    <span className="text-zinc-500">Staff Member:</span>
+                    <span className="text-white font-semibold">{resetModalStaff.name}</span>
+                  </div>
+                  <div className="flex justify-between font-mono">
+                    <span className="text-zinc-500">Staff ID:</span>
+                    <span className="text-amber-400 font-bold">{resetModalStaff.staffId}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-zinc-500">Department:</span>
+                    <span className="text-zinc-300">{resetModalStaff.department}</span>
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-xs text-zinc-300 font-bold">New Password (min 6 characters) *</label>
+                    <button
+                      type="button"
+                      onClick={handleGenerateRandomPassword}
+                      className="text-[10px] text-amber-400 hover:underline flex items-center gap-1 cursor-pointer"
+                    >
+                      <RefreshCw className="w-2.5 h-2.5" />
+                      <span>Generate Random</span>
+                    </button>
+                  </div>
+                  <input
+                    type="text"
+                    required
+                    minLength={6}
+                    value={resetNewPassword}
+                    onChange={(e) => setResetNewPassword(e.target.value)}
+                    placeholder="Enter new password"
+                    className="w-full px-3 py-2 rounded-xl bg-[#12151F] border border-zinc-800 text-xs text-white outline-none focus:border-amber-500 font-mono"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs text-zinc-300 font-bold block mb-1">Confirm New Password *</label>
+                  <input
+                    type="text"
+                    required
+                    minLength={6}
+                    value={resetConfirmPassword}
+                    onChange={(e) => setResetConfirmPassword(e.target.value)}
+                    placeholder="Re-type new password"
+                    className="w-full px-3 py-2 rounded-xl bg-[#12151F] border border-zinc-800 text-xs text-white outline-none focus:border-amber-500 font-mono"
+                  />
+                </div>
+
+                <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-[11px] text-amber-300/90">
+                  Note: Resetting this password updates the PBKDF2 hash and revokes any active sessions for this staff member.
+                </div>
+
+                <div className="flex gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setResetModalStaff(null)}
+                    className="flex-1 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-semibold transition"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isResetting}
+                    className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:brightness-110 text-black font-extrabold text-xs uppercase tracking-wider transition disabled:opacity-50"
+                  >
+                    {isResetting ? 'Resetting...' : 'Confirm Reset'}
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

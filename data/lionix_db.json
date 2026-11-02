@@ -40,7 +40,7 @@
       "passwordHash": "08dcd81c68092365d2193e72d60cac5696ca1ba1c148711a776086c59cff63c71612a20a961a8c489863d4fdf0e7e80796a6caa9c7382a5d2207a0786c33879b",
       "needsInitialPasswordSetup": false,
       "mustChangePassword": false,
-      "token": "lionix_session_1f7d23abc074c6167ce9eff4c66cdf0822669d77f0bce1942d9f6ef1e19b60c9",
+      "token": "lionix_session_24f9c7b205af7482cc2f732c7cc57c078ba69ca941a9cd555f6b624947534493",
       "joinedDate": "2026-01-01",
       "preferredLanguage": "en"
     },
@@ -57,7 +57,7 @@
       "passwordHash": "b345db5c9a2fcf839d7cd60992c624b9042dee7e014c40943538655cbb08fa804b6fe7c06b36cc96698808e01d7aa39dddae73f26e81ffd1de4aca37edd0245b",
       "needsInitialPasswordSetup": false,
       "mustChangePassword": false,
-      "token": "lionix_session_c7df9fd77c145df0c8e3b97fe176f30d5b7a8bb7cfee10671ba0b8c47d0f284d",
+      "token": "lionix_session_6bba85409c61c20d946da93ba44c56c7c0e6b8691d870a1659ace9fd6cf202e9",
       "joinedDate": "2026-01-01",
       "preferredLanguage": "en"
     },
@@ -74,6 +74,38 @@
       "passwordHash": "cb63aed63612f5904e4e56cb41ad45a7b35d9d9e76f2eebcea8dc5cc00e0f4475f8af4e2beb0faffc5ee2ee548df11ff7c4232f94c6f4082fa3369096b820b04",
       "token": "lionix_session_0d3b8411457006c1acd26acf8d8d40f7d14da3d7dec2f1738a78a0b20b0d08f3",
       "joinedDate": "2026-01-01",
+      "preferredLanguage": "en"
+    },
+    {
+      "id": "usr-stf-002",
+      "name": "Farhan Chowdhury",
+      "email": "farhan.lionix@gmail.com",
+      "avatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=300&q=80",
+      "role": "Developer",
+      "isOwner": false,
+      "department": "AI Software Development",
+      "staffId": "LNX-ENG-001",
+      "salt": "fbdcacba313e3656414059e71ccdf21b",
+      "passwordHash": "1e6bd316cd10ee0453537bbbf4b0baace6ce73262daffabb4079d0fca5846e86f744b69667e3e4515142b2ad412bf709762f5c020be3634961d146f41f6b7517",
+      "status": "active",
+      "joinedDate": "2026-01-15",
+      "preferredLanguage": "en",
+      "token": "",
+      "mustChangePassword": false
+    },
+    {
+      "id": "usr-stf-003",
+      "name": "Ayesha Rahman",
+      "email": "ayesha.lionix@gmail.com",
+      "avatar": "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=300&q=80",
+      "role": "Designer",
+      "isOwner": false,
+      "department": "AI UI/UX Design",
+      "staffId": "LNX-DES-001",
+      "salt": "9005558b0c7040fbf54dbd9bad4b561a",
+      "passwordHash": "ac87532a4df7fb762903b4cfb006c6efe673d161c011d82675a146df6b155d35ac872f8b50377c749dc885d95d57cfbf6532b7036a6d6c52083f207ac44b5dfe",
+      "status": "active",
+      "joinedDate": "2026-01-20",
       "preferredLanguage": "en"
     }
   ],
@@ -104,6 +136,36 @@
       "role": "Super Admin",
       "status": "active",
       "bloodGroup": "O+",
+      "emergencyContact": "+1 800-LIONIX-AI"
+    },
+    {
+      "id": "stf-002",
+      "name": "Farhan Chowdhury",
+      "email": "farhan.lionix@gmail.com",
+      "staffId": "LNX-ENG-001",
+      "photoUrl": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=300&q=80",
+      "department": "AI Software Development",
+      "jobTitle": "Lead Systems Engineer",
+      "joiningDate": "2026-01-15",
+      "role": "Developer",
+      "status": "active",
+      "bloodGroup": "B+",
+      "emergencyContact": "+1 800-LIONIX-AI",
+      "updatedAt": "2026-11-02T13:34:32.277Z",
+      "updatedBy": "LIONIX Technologies Owner"
+    },
+    {
+      "id": "stf-003",
+      "name": "Ayesha Rahman",
+      "email": "ayesha.lionix@gmail.com",
+      "staffId": "LNX-DES-001",
+      "photoUrl": "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=300&q=80",
+      "department": "AI UI/UX Design",
+      "jobTitle": "Lead UI/UX Designer",
+      "joiningDate": "2026-01-20",
+      "role": "Designer",
+      "status": "active",
+      "bloodGroup": "A+",
       "emergencyContact": "+1 800-LIONIX-AI"
     }
   ],
@@ -228,11 +290,25 @@
           "path": "app/src/main/AndroidManifest.xml",
           "language": "xml",
           "content": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<manifest xmlns:android=\"http://schemas.android.com/apk/res/android\">\n    <uses-permission android:name=\"android.permission.INTERNET\" />\n    <uses-permission android:name=\"android.permission.RECORD_AUDIO\" />\n    <uses-permission android:name=\"android.permission.MODIFY_AUDIO_SETTINGS\" />\n    <uses-permission android:name=\"android.permission.ACCESS_NETWORK_STATE\" />\n    <application\n        android:allowBackup=\"true\"\n        android:icon=\"@mipmap/ic_launcher\"\n        android:label=\"LIONIX AudioVerse\"\n        android:theme=\"@style/Theme.Lionix\">\n        <activity android:name=\".MainActivity\" android:exported=\"true\">\n            <intent-filter>\n                <action android:name=\"android.intent.action.MAIN\" />\n                <category android:name=\"android.intent.category.LAUNCHER\" />\n            </intent-filter>\n        </activity>\n    </application>\n</manifest>"
+        },
+        {
+          "name": "server.ts",
+          "path": "server/server.ts",
+          "language": "typescript",
+          "content": "import express from 'express';\nimport dotenv from 'dotenv';\ndotenv.config();\n\nconst app = express();\nconst PORT = process.env.PORT || 3000;\napp.use(express.json());\n\napp.get('/api/health', (req, res) => {\n  res.json({ status: 'live', domain: 'lionixai.com', timestamp: new Date().toISOString() });\n});\n\napp.listen(PORT, () => {\n  console.log(`Server running on port ${PORT}`);\n});"
+        },
+        {
+          "name": "schema.sql",
+          "path": "db/schema.sql",
+          "language": "sql",
+          "content": "CREATE TABLE IF NOT EXISTS users (\n  id VARCHAR(64) PRIMARY KEY,\n  email VARCHAR(255) UNIQUE NOT NULL,\n  role VARCHAR(32) DEFAULT 'member',\n  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP\n);\n\nCREATE TABLE IF NOT EXISTS orders (\n  id VARCHAR(64) PRIMARY KEY,\n  user_id VARCHAR(64) REFERENCES users(id),\n  amount DECIMAL(10,2) NOT NULL,\n  status VARCHAR(32) DEFAULT 'paid'\n);"
         }
       ],
       "logs": [
         "[Initialization] Scaffolded LIONIX AudioVerse Kotlin Compose Architecture.",
-        "[Build Ready] Android Package & Keystore Signing Configured."
+        "[Build Ready] Android Package & Keystore Signing Configured.",
+        "[1:23:52 PM] Executed Full-Auto Integration Workflow for: \"LIONIX AI TECHNOLOGIES — FINAL LOGIN URL CONFIGURATION\n\nআমার...\"",
+        "[1:23:52 PM] APNCLOUD deployment package synchronized."
       ],
       "departmentAssignments": [],
       "testResults": [
@@ -594,6 +670,116 @@
     }
   },
   "auditLogs": [
+    {
+      "id": "aud-1793626472277",
+      "timestamp": "2026-11-02 13:34:32",
+      "user": "lionixaitc@gmail.com",
+      "action": "Staff Account Reactivated",
+      "department": "AI Software Development",
+      "ip": "127.0.0.1",
+      "severity": "medium",
+      "details": "Staff member Farhan Chowdhury (LNX-ENG-001) status changed to \"active\" by LIONIX Technologies Owner."
+    },
+    {
+      "id": "aud-1793626464625",
+      "timestamp": "2026-11-02 13:34:24",
+      "user": "lionixaitc@gmail.com",
+      "action": "Staff Account Suspended",
+      "department": "AI Software Development",
+      "ip": "127.0.0.1",
+      "severity": "high",
+      "details": "Staff member Farhan Chowdhury (LNX-ENG-001) status changed to \"suspended\" by LIONIX Technologies Owner."
+    },
+    {
+      "id": "aud-1793626460301",
+      "timestamp": "2026-11-02 13:34:20",
+      "user": "LNX-ENG-001",
+      "action": "Authorized Staff Login (Staff Portal /admin)",
+      "department": "AI Software Development",
+      "ip": "127.0.0.1",
+      "severity": "low",
+      "details": "Authorized staff login for Farhan Chowdhury (Staff ID: LNX-ENG-001, Role: Developer) via https://lionixai.com/admin."
+    },
+    {
+      "id": "aud-1793626456584",
+      "timestamp": "2026-11-02 13:34:16",
+      "user": "lionixaitc@gmail.com",
+      "action": "Staff Password Reset by Owner",
+      "department": "AI Software Development",
+      "ip": "127.0.0.1",
+      "severity": "high",
+      "details": "Staff password for Farhan Chowdhury (Staff ID: LNX-ENG-001) was securely reset by LIONIX Technologies Owner (Company Owner). Old sessions revoked."
+    },
+    {
+      "id": "aud-1793626451612",
+      "timestamp": "2026-11-02 13:34:11",
+      "user": "lionixaitc@gmail.com",
+      "action": "Authorized Portal Login",
+      "department": "Executive Board",
+      "ip": "127.0.0.1",
+      "severity": "low",
+      "details": "Authorized login for LIONIX Technologies Owner (Company Owner). Direct Gmail + Password verified."
+    },
+    {
+      "id": "aud-1793626447883",
+      "timestamp": "2026-11-02 13:34:07",
+      "user": "lionixaitc@gmail.com",
+      "action": "Failed Login Attempt: Invalid Password",
+      "department": "AI Security",
+      "ip": "127.0.0.1",
+      "severity": "high",
+      "details": "Failed password verification for lionixaitc@gmail.com. Remaining attempts: 4."
+    },
+    {
+      "id": "aud-1793626439989",
+      "timestamp": "2026-11-02 13:33:59",
+      "user": "LNX-ENG-001",
+      "action": "Failed Staff Login: Invalid Password",
+      "department": "AI Software Development",
+      "ip": "127.0.0.1",
+      "severity": "high",
+      "details": "Failed password verification for staff LNX-ENG-001. Remaining attempts: 4. Forgot password recovery must go through the Company Owner."
+    },
+    {
+      "id": "aud-1793626434349",
+      "timestamp": "2026-11-02 13:33:54",
+      "user": "LNX-ENG-001",
+      "action": "Authorized Staff Login (Staff Portal /admin)",
+      "department": "AI Software Development",
+      "ip": "127.0.0.1",
+      "severity": "low",
+      "details": "Authorized staff login for Farhan Chowdhury (Staff ID: LNX-ENG-001, Role: Developer) via https://lionixai.com/admin."
+    },
+    {
+      "id": "aud-1793622859853",
+      "timestamp": "2026-11-02 12:34:19",
+      "user": "lionixaitc@gmail.com",
+      "action": "Failed Login Attempt: Invalid Password",
+      "department": "AI Security",
+      "ip": "127.0.0.1",
+      "severity": "high",
+      "details": "Failed password verification for lionixaitc@gmail.com. Remaining attempts: 4."
+    },
+    {
+      "id": "aud-1793622856666",
+      "timestamp": "2026-11-02 12:34:16",
+      "user": "petzone0877@gmail.com",
+      "action": "Authorized Portal Login",
+      "department": "Executive Board",
+      "ip": "127.0.0.1",
+      "severity": "low",
+      "details": "Authorized login for LIONIX Company Owner (Company Owner). Direct Gmail + Password verified."
+    },
+    {
+      "id": "aud-1793622851882",
+      "timestamp": "2026-11-02 12:34:11",
+      "user": "lionixaitc@gmail.com",
+      "action": "Authorized Portal Login",
+      "department": "Executive Board",
+      "ip": "127.0.0.1",
+      "severity": "low",
+      "details": "Authorized login for LIONIX Technologies Owner (Company Owner). Direct Gmail + Password verified."
+    },
     {
       "id": "aud-1793605368037",
       "timestamp": "2026-11-02 07:42:48",
@@ -1115,6 +1301,115 @@
       "dueDate": "2026-11-15"
     }
   ],
-  "autoIntegrations": [],
+  "autoIntegrations": [
+    {
+      "id": "task-auto-1793625832436",
+      "projectId": "proj-android-audioverse",
+      "prompt": "LIONIX AI TECHNOLOGIES — FINAL LOGIN URL CONFIGURATION\n\nআমার Company Portal-এর Staff Login URL নির্দিষ্ট করে দাও।\n\nSTAFF LOGIN URL:\nhttps://lionixai.com/admin\n\nSTAFF LOGIN SYSTEM\n\n1. সকল Staff এই URL ব্যবহার করে Login করবে।\n2. Login ID হিসেবে Staff ID ব্যবহার করবে।\n3. Password দিয়ে Login করবে।\n4. Staff Account শুধুমাত্র Owner তৈরি করতে পারবে।\n5. Public Staff Registration বন্ধ থাকবে।\n6. Staff Login Page-এ Forgot Password থাকবে না।\n7. Staff Password ভুলে গেলে Owner-এর সঙ্গে যোগাযোগ করবে।\n8. Owner Staff Management থেকে Password Reset করতে পারবে।\n9. Staff নিজের Account-এর সীমার মধ্যে অনুমোদিত কাজ করতে পারবে।\n\nOWNER CONTROL\n\n1. Owner-এর আলাদা Secure Login থাকবে।\n2. Owner সম্পূর্ণ Staff Management নিয়ন্ত্রণ করবে।\n3. Owner Staff Account Create, Edit, Suspend এবং Delete করতে পারবে।\n4. Owner Staff Password Reset করতে পারবে।\n5. Owner-এর Account Recovery শুধুমাত্র Owner ব্যবহার করতে পারবে।\n\nIMPORTANT\n\n- Staff Login URL অবশ্যই https://lionixai.com/admin হবে।\n- Existing Backend এবং Database ব্যবহার করবে।\n- Role-Based Access Control কার্যকর করবে।\n- URL পরিবর্তন না করে বিদ্যমান Website-এর সঙ্গে সংযুক্ত করবে।\n- Existing Features নষ্ট করবে না।\n- Mobile Responsive Design বজায় রাখবে।\n\nসম্পূর্ণ Login System পরীক্ষা করে কার্যকর করবে।",
+      "overallStatus": "completed",
+      "steps": [
+        {
+          "stepNumber": 1,
+          "title": "প্রয়োজনীয়তা ও আর্কিটেকচার বিশ্লেষণ",
+          "category": "code",
+          "status": "completed",
+          "details": "আপনার নির্দেশ স্বয়ংক্রিয়ভাবে বিশ্লেষণ করা হয়েছে। ফুল-স্ট্যাক ওয়েব, রিয়েল-টাইম ব্যাকএন্ড, ডেটাবেস স্কিমা ও বিলিং মডেল চিহ্নিত।",
+          "agent": "Senior Solution Architect Agent",
+          "executionTimeMs": 140
+        },
+        {
+          "stepNumber": 2,
+          "title": "হোস্টিং সার্ভার ও পরিকাঠামো স্বয়ংক্রিয় শনাক্তকরণ",
+          "category": "server",
+          "status": "completed",
+          "details": "Target Server: APNCLOUD (lionixai.com / 194.163.142.88). Verified LiteSpeed Web Server, Node.js 20.x Selector, Let's Encrypt AutoSSL.",
+          "agent": "DevOps & Hosting Agent",
+          "executionTimeMs": 190
+        },
+        {
+          "stepNumber": 3,
+          "title": "ফ্রন্টএন্ড ও রিঅ্যাক্ট কম্পোনেন্ট স্বয়ংক্রিয় সৃষ্টি",
+          "category": "code",
+          "status": "completed",
+          "details": "Synthesized React 19 + TypeScript + Tailwind CSS responsive interface with live state and interactive DOM bindings.",
+          "agent": "Frontend Core Agent",
+          "executionTimeMs": 420
+        },
+        {
+          "stepNumber": 4,
+          "title": "ব্যাকএন্ড ও রেস্ট এপিআই স্বয়ংক্রিয় সংযোগ",
+          "category": "backend",
+          "status": "completed",
+          "details": "Configured Node.js Express server with JWT authentication, health check /api/health, and structured CRUD endpoints.",
+          "agent": "Backend API & Middleware Agent",
+          "executionTimeMs": 380
+        },
+        {
+          "stepNumber": 5,
+          "title": "ডেটাবেস স্কিমা ও মাইগ্রেশন স্বয়ংক্রিয় প্রস্তুতি",
+          "category": "database",
+          "status": "completed",
+          "details": "Configured MySQL / PostgreSQL schemas (users, products, orders, subscriptions, audit_logs) with foreign keys and indexes.",
+          "agent": "Database Architect Agent",
+          "executionTimeMs": 220
+        },
+        {
+          "stepNumber": 6,
+          "title": "পেমেন্ট গেটওয়ে ও বিলিং সিস্টেম স্বয়ংক্রিয় কনফিগার",
+          "category": "billing",
+          "status": "completed",
+          "details": "Configured Stripe, PayPal, SSLCommerz, and bKash webhook listeners and invoice generation pipelines.",
+          "agent": "FinTech & Billing Agent",
+          "executionTimeMs": 260
+        },
+        {
+          "stepNumber": 7,
+          "title": "ক্রেডেনশিয়াল ও সিকিউরিটি অডিট",
+          "category": "api",
+          "status": "completed",
+          "details": "Zero plain-text credential leaks in client code. Stored all secrets in protected backend vault with role-based access control.",
+          "agent": "Security & Zero-Trust Agent",
+          "executionTimeMs": 150
+        },
+        {
+          "stepNumber": 8,
+          "title": "স্বয়ংক্রিয় টেস্ট ও ভ্যালিডেশন",
+          "category": "testing",
+          "status": "completed",
+          "details": "Executed 6 automated tests: Syntax validation (PASS), REST Endpoint reachability (PASS), Schema integrity (PASS), DNS resolution (PASS).",
+          "agent": "QA & Automated Testing Agent",
+          "executionTimeMs": 310
+        },
+        {
+          "stepNumber": 9,
+          "title": "স্বয়ংক্রিয় কোড অপ্টিমাইজেশন ও বাগ-ফিক্সিং",
+          "category": "code",
+          "status": "completed",
+          "details": "Verified tree-shaking, responsive mobile breakpoints, and HTTPS rewrite rules for APNCLOUD LiteSpeed cache.",
+          "agent": "Self-Healing Debugger Agent",
+          "executionTimeMs": 180
+        },
+        {
+          "stepNumber": 10,
+          "title": "প্রোডাকশন প্যাকেজ ও ডিপ্লয়মেন্ট প্রস্তুতি",
+          "category": "server",
+          "status": "completed",
+          "details": "Ready for APNCLOUD deployment. Package built with root index.html, .htaccess, and direct live deployment gate.",
+          "agent": "Release Manager Agent",
+          "executionTimeMs": 290
+        }
+      ],
+      "deliverables": {
+        "filesGenerated": 5,
+        "backendConnected": true,
+        "databaseConnected": true,
+        "billingConfigured": true,
+        "apncloudPackageReady": true,
+        "exportZipUrl": "/api/downloads/apncloud-package"
+      },
+      "createdAt": "2026-11-02T13:23:52.436Z",
+      "completedAt": "2026-11-02T13:23:52.436Z"
+    }
+  ],
   "savedQrCodes": []
 }

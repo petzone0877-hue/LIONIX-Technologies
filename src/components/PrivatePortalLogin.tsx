@@ -19,6 +19,7 @@ import {
   EyeOff,
   HelpCircle,
   RotateCcw,
+  IdCard,
 } from 'lucide-react';
 
 interface PrivatePortalLoginProps {
@@ -26,6 +27,7 @@ interface PrivatePortalLoginProps {
   onLoginSuccess: (user: UserSession) => void;
   language: Language;
   onToggleLanguage: () => void;
+  onSwitchToStaff?: () => void;
 }
 
 export const PrivatePortalLogin: React.FC<PrivatePortalLoginProps> = ({
@@ -33,6 +35,7 @@ export const PrivatePortalLogin: React.FC<PrivatePortalLoginProps> = ({
   onLoginSuccess,
   language,
   onToggleLanguage,
+  onSwitchToStaff,
 }) => {
   const [step, setStep] = useState<'login' | 'forgot_password' | 'owner_setup'>('login');
   
@@ -255,7 +258,25 @@ export const PrivatePortalLogin: React.FC<PrivatePortalLoginProps> = ({
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
+          {/* Switch to Dedicated Staff Login URL (/admin) */}
+          <button
+            onClick={() => {
+              if (onSwitchToStaff) {
+                onSwitchToStaff();
+              } else {
+                window.history.pushState({}, '', '/admin');
+                window.location.href = '/admin';
+              }
+            }}
+            type="button"
+            className="px-3 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-[11px] text-amber-300 font-bold transition flex items-center gap-1.5 cursor-pointer shadow-sm"
+            title="Go to dedicated Staff Portal (lionixai.com/admin)"
+          >
+            <IdCard className="w-3.5 h-3.5 text-amber-400" />
+            <span>Staff Portal (/admin)</span>
+          </button>
+
           {/* Language Toggle */}
           <button
             onClick={onToggleLanguage}
@@ -431,6 +452,30 @@ export const PrivatePortalLogin: React.FC<PrivatePortalLoginProps> = ({
                       : 'AUTHENTICATE & ENTER PORTAL'}
                   </span>
                 </button>
+
+                {/* Direct Link to Official Staff Portal (/admin) */}
+                <div className="pt-3 border-t border-zinc-800/80 text-center">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (onSwitchToStaff) {
+                        onSwitchToStaff();
+                      } else {
+                        window.history.pushState({}, '', '/admin');
+                        window.location.href = '/admin';
+                      }
+                    }}
+                    className="inline-flex items-center gap-1.5 text-xs text-zinc-400 hover:text-amber-400 transition cursor-pointer group"
+                  >
+                    <IdCard className="w-3.5 h-3.5 text-amber-500 group-hover:scale-110 transition" />
+                    <span>
+                      {language === 'bn'
+                        ? 'স্টাফ মেম্বার? অফিসিয়াল স্টাফ পোর্টালে যান (lionixai.com/admin)'
+                        : 'Company Staff? Access Staff Portal at lionixai.com/admin'}
+                    </span>
+                    <ArrowRight className="w-3 h-3 text-amber-400 group-hover:translate-x-0.5 transition" />
+                  </button>
+                </div>
               </form>
             ) : step === 'forgot_password' ? (
               /* EXCLUSIVE OWNER FORGOT PASSWORD & RECOVERY SYSTEM */

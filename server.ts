@@ -174,6 +174,20 @@ const initialDb: DbSchema = {
       emergencyContact: '+1 800-LIONIX-AI',
     },
     {
+      id: 'stf-owner-petzone',
+      name: 'LIONIX Technologies Owner',
+      email: 'petzone0877@gmail.com',
+      staffId: 'LNX-OWNER-02',
+      photoUrl: '/assets/aistudio/WhatsApp_Image_2026-11-01_at_3.45.39_AM-removebg-preview_5500538f.png',
+      department: 'Executive Board',
+      jobTitle: 'Co-Founder & Chief Technology Officer',
+      joiningDate: '2026-01-01',
+      role: 'Company Owner',
+      status: 'active',
+      bloodGroup: 'O+',
+      emergencyContact: '+1 800-LIONIX-AI',
+    },
+    {
       id: 'stf-001',
       name: 'Lion Group Executive Admin',
       email: 'liongroupdv@gmail.com',
@@ -1533,6 +1547,146 @@ app.post(['/api/auth/login', '/api/auth/login-step1'], (req: Request, res: Respo
     },
     token: sessionToken,
     message: 'Authentication successful. Welcome to LIONIX AI Studio.',
+  });
+});
+
+// ==============================================================================
+// 3.1 DEDICATED STAFF LOGIN SYSTEM (STAFF LOGIN URL: https://lionixai.com/admin)
+// Requirements:
+// - URL: https://lionixai.com/admin
+// - Login ID: Staff ID (e.g. LNX-ENG-001, LNX-EXEC-002, LNX-DES-001)
+// - Password: Staff account password
+// - No self-service "Forgot Password"; staff contact Company Owner
+// - Suspended staff cannot log in
+// ==============================================================================
+app.post(['/api/auth/staff-login', '/admin/login'], (req: Request, res: Response) => {
+  const { staffId, password } = req.body;
+
+  if (!staffId || typeof staffId !== 'string' || !staffId.trim()) {
+    res.status(400).json({ error: 'Valid Staff ID is required (e.g. LNX-ENG-001).' });
+    return;
+  }
+
+  if (!password || typeof password !== 'string') {
+    res.status(400).json({ error: 'Staff account password is required.' });
+    return;
+  }
+
+  const cleanStaffId = staffId.trim().toUpperCase();
+
+  // Rate Limiting Check
+  const rateLimitStatus = checkRateLimit(cleanStaffId);
+  if (rateLimitStatus.locked) {
+    const mins = Math.ceil((rateLimitStatus.remainingLockoutSeconds || 0) / 60);
+    res.status(429).json({
+      error: `ACCOUNT SECURITY LOCKOUT: Too many consecutive failed attempts. Staff ID ${cleanStaffId} is locked for ${mins} minute(s). Please try again later or contact the Company Owner.`,
+    });
+    return;
+  }
+
+  // 1. Find Staff Member in staffList
+  const staffMember = db.staffList.find(
+    (s) => s.staffId?.trim().toUpperCase() === cleanStaffId || s.id === cleanStaffId.toLowerCase()
+  );
+
+  // 2. Find associated user account in users
+  const user = db.users.find(
+    (u) =>
+      u.staffId?.trim().toUpperCase() === cleanStaffId ||
+      (staffMember && u.email?.toLowerCase() === staffMember.email?.toLowerCase())
+  );
+
+  if (!staffMember && !user) {
+    const failInfo = recordFailedLogin(cleanStaffId);
+    res.status(401).json({
+      error: `Access Denied: Staff ID "${cleanStaffId}" not found. Only registered staff may log in. Staff accounts are provisioned exclusively by the Company Owner.`,
+    });
+    return;
+  }
+
+  // Check suspension status
+  if (staffMember?.status === 'suspended' || (user as any)?.status === 'suspended') {
+    res.status(403).json({
+      error: `Account Suspended: Staff access for ${cleanStaffId} has been suspended by the Company Owner. Please contact the Company Owner directly.`,
+      suspended: true,
+    });
+    return;
+  }
+
+  if (!user || !user.passwordHash || !user.salt) {
+    res.status(401).json({
+      error: 'Staff account credential setup pending. Please contact the Company Owner to initialize or reset your portal password.',
+    });
+    return;
+  }
+
+  // Verify password using PBKDF2
+  const isValidPw = verifyPassword(password, user.salt, user.passwordHash);
+  if (!isValidPw) {
+    const failInfo = recordFailedLogin(cleanStaffId);
+    db.auditLogs.unshift({
+      id: `aud-${Date.now()}`,
+      timestamp: new Date().toISOString().replace('T', ' ').substring(0, 19),
+      user: cleanStaffId,
+      action: 'Failed Staff Login: Invalid Password',
+      department: staffMember?.department || user.department || 'Staff Portal',
+      ip: req.ip || '127.0.0.1',
+      severity: failInfo.locked ? 'critical' : 'high',
+      details: failInfo.locked
+        ? `Staff ID ${cleanStaffId} locked out due to 5 consecutive failed login attempts on /admin.`
+        : `Failed password verification for staff ${cleanStaffId}. Remaining attempts: ${failInfo.remaining}. Forgot password recovery must go through the Company Owner.`,
+    });
+    saveDatabase(db);
+
+    if (failInfo.locked) {
+      res.status(429).json({
+        error: `ACCOUNT LOCKED: 5 consecutive failed login attempts. Staff ID ${cleanStaffId} is locked for 15 minutes for security protection.`,
+      });
+      return;
+    }
+
+    res.status(401).json({
+      error: `Invalid Staff Password. Warning: ${failInfo.remaining} attempt(s) remaining. (Forgot your password? Please contact the Company Owner directly to request a password reset).`,
+    });
+    return;
+  }
+
+  // Success
+  resetLoginRateLimit(cleanStaffId);
+
+  const sessionToken = `lionix_session_${crypto.randomBytes(32).toString('hex')}`;
+  user.token = sessionToken;
+  saveDatabase(db);
+
+  db.auditLogs.unshift({
+    id: `aud-${Date.now()}`,
+    timestamp: new Date().toISOString().replace('T', ' ').substring(0, 19),
+    user: cleanStaffId,
+    action: 'Authorized Staff Login (Staff Portal /admin)',
+    department: staffMember?.department || user.department,
+    ip: req.ip || '127.0.0.1',
+    severity: 'low',
+    details: `Authorized staff login for ${user.name} (Staff ID: ${cleanStaffId}, Role: ${user.role}) via https://lionixai.com/admin.`,
+  });
+  saveDatabase(db);
+
+  res.json({
+    success: true,
+    user: {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      avatar: user.avatar,
+      role: user.role,
+      isOwner: !!user.isOwner,
+      department: user.department,
+      staffId: user.staffId || cleanStaffId,
+      token: sessionToken,
+      joinedDate: user.joinedDate,
+      preferredLanguage: user.preferredLanguage || 'en',
+    },
+    token: sessionToken,
+    message: `Authentication successful. Welcome, ${user.name}!`,
   });
 });
 
@@ -3231,6 +3385,117 @@ app.delete('/api/staff/:id', requireOwner, (req: Request, res: Response) => {
   saveDatabase(db);
 
   res.json({ success: true, deletedStaffId: deleted.staffId });
+});
+
+// Owner Staff Password Reset Endpoint (Owner controls staff passwords)
+app.post('/api/staff/reset-password', requireManagement, (req: Request, res: Response) => {
+  const session = (req as any).user;
+  const { staffId, newPassword } = req.body;
+
+  if (!staffId || !newPassword) {
+    res.status(400).json({ error: 'Staff ID and new password are required.' });
+    return;
+  }
+
+  if (newPassword.length < 6) {
+    res.status(400).json({ error: 'Password must be at least 6 characters long.' });
+    return;
+  }
+
+  const cleanStaffId = staffId.trim().toUpperCase();
+  const staff = db.staffList.find((s) => s.staffId?.trim().toUpperCase() === cleanStaffId || s.id === cleanStaffId.toLowerCase());
+  const user = db.users.find((u) => u.staffId?.trim().toUpperCase() === cleanStaffId || (staff && u.email?.toLowerCase() === staff.email?.toLowerCase()));
+
+  if (!staff && !user) {
+    res.status(404).json({ error: `Staff member with ID "${cleanStaffId}" not found.` });
+    return;
+  }
+
+  // Security: Super Admin cannot reset Company Owner password
+  if (user?.isOwner && !session.isOwner) {
+    res.status(403).json({ error: 'Security Policy: Only the Company Owner can modify Company Owner credentials.' });
+    return;
+  }
+
+  const salt = crypto.randomBytes(16).toString('hex');
+  const passwordHash = hashPassword(newPassword, salt);
+
+  if (user) {
+    user.salt = salt;
+    user.passwordHash = passwordHash;
+    user.token = ''; // Revoke active sessions
+    (user as any).mustChangePassword = false;
+  }
+
+  db.auditLogs.unshift({
+    id: `aud-${Date.now()}`,
+    timestamp: new Date().toISOString().replace('T', ' ').substring(0, 19),
+    user: session.email,
+    action: 'Staff Password Reset by Owner',
+    department: staff?.department || user?.department || 'Executive Board',
+    ip: req.ip || '127.0.0.1',
+    severity: 'high',
+    details: `Staff password for ${staff?.name || user?.name} (Staff ID: ${cleanStaffId}) was securely reset by ${session.name} (${session.role}). Old sessions revoked.`,
+  });
+  saveDatabase(db);
+
+  res.json({
+    success: true,
+    message: `Password for ${staff?.name || user?.name} (${cleanStaffId}) successfully reset. All previous sessions have been revoked.`,
+  });
+});
+
+// Toggle Staff Status (Active / Suspended)
+app.put('/api/staff/:id/toggle-status', requireManagement, (req: Request, res: Response) => {
+  const session = (req as any).user;
+  const staffIdParam = req.params.id;
+  const { status } = req.body;
+
+  if (status !== 'active' && status !== 'suspended') {
+    res.status(400).json({ error: 'Invalid status. Must be "active" or "suspended".' });
+    return;
+  }
+
+  const targetStaff = db.staffList.find((s) => s.id === staffIdParam || s.staffId === staffIdParam);
+  if (!targetStaff) {
+    res.status(404).json({ error: 'Staff member record not found.' });
+    return;
+  }
+
+  if (targetStaff.role === 'Company Owner' || targetStaff.email === 'lionixaitc@gmail.com') {
+    res.status(403).json({ error: 'Security Policy: Company Owner account cannot be suspended.' });
+    return;
+  }
+
+  targetStaff.status = status;
+  targetStaff.updatedAt = new Date().toISOString();
+  targetStaff.updatedBy = session.name || session.email;
+
+  const user = db.users.find((u) => u.email?.toLowerCase() === targetStaff.email?.toLowerCase() || u.staffId === targetStaff.staffId);
+  if (user) {
+    (user as any).status = status;
+    if (status === 'suspended') {
+      user.token = ''; // Revoke immediately
+    }
+  }
+
+  db.auditLogs.unshift({
+    id: `aud-${Date.now()}`,
+    timestamp: new Date().toISOString().replace('T', ' ').substring(0, 19),
+    user: session.email,
+    action: `Staff Account ${status === 'suspended' ? 'Suspended' : 'Reactivated'}`,
+    department: targetStaff.department,
+    ip: req.ip || '127.0.0.1',
+    severity: status === 'suspended' ? 'high' : 'medium',
+    details: `Staff member ${targetStaff.name} (${targetStaff.staffId}) status changed to "${status}" by ${session.name}.`,
+  });
+  saveDatabase(db);
+
+  res.json({
+    success: true,
+    staff: targetStaff,
+    message: `Staff member ${targetStaff.name} has been ${status === 'suspended' ? 'suspended' : 'reactivated'}.`,
+  });
 });
 
 // Native Photo Upload Endpoint for Staff Photos

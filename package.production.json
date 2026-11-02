@@ -1,0 +1,20 @@
+{
+  "name": "lionix-ai-studio",
+  "version": "1.0.0",
+  "description": "LIONIX AI Technologies \u2014 APNCLOUD Deployment",
+  "main": "app.js",
+  "type": "module",
+  "scripts": {
+    "start": "node app.js",
+    "production": "node app.js"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "dotenv": "^17.2.3",
+    "@google/genai": "^2.4.0",
+    "jszip": "^3.10.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
