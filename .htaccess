@@ -1,0 +1,42 @@
+# ==============================================================================
+# LIONIX AI TECHNOLOGIES — DIRECTADMIN HOSTING CONFIGURATION (.htaccess)
+# Domain: https://lionixai.com & https://www.lionixai.com
+# Platform: LIONIX AI Studio
+# Tagline: BUILD ANYTHING. CREATE EVERYTHING.
+# ==============================================================================
+
+# 1. Enforce HTTPS and Canonical SSL Connection
+RewriteEngine On
+RewriteCond %{HTTPS} !=on
+RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# 2. CloudLinux / Phusion Passenger Node.js DirectAdmin Integration
+# If your DirectAdmin hosting uses the "Setup Node.js App" (Passenger) module:
+<IfModule mod_passenger.c>
+    PassengerAppRoot "/home/USERNAME/domains/lionixai.com/public_html"
+    PassengerAppType node
+    PassengerStartupFile app.js
+</IfModule>
+
+# 3. Reverse Proxy Fallback (Apache / LiteSpeed mod_proxy)
+# If running Node.js as a persistent background process on custom port (e.g. 3000):
+<IfModule mod_proxy.c>
+    RewriteCond %{REQUEST_URI} !^/\.well-known/acme-challenge/
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^(.*)$ http://127.0.0.1:3000/$1 [P,L]
+</IfModule>
+
+# 4. Security Headers
+<IfModule mod_headers.c>
+    Header set X-Content-Type-Options "nosniff"
+    Header set X-Frame-Options "SAMEORIGIN"
+    Header set X-XSS-Protection "1; mode=block"
+    Header set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>
+
+# 5. Prevent direct access to sensitive configuration files
+<FilesMatch "(\.env|\.git|lionix_db\.json\.bak)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>

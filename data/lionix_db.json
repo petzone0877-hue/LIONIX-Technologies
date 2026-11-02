@@ -1,0 +1,1120 @@
+{
+  "companyInfo": {
+    "name": "LIONIX AI Technologies",
+    "productName": "LIONIX AI Studio",
+    "brandName": "LIONIX",
+    "tagline": "BUILD ANYTHING. CREATE EVERYTHING.",
+    "description": "An AI-Powered Software Development Company.",
+    "logoUrl": "/assets/aistudio/WhatsApp_Image_2026-11-01_at_3.45.39_AM-removebg-preview_5500538f.png",
+    "bannerUrl": "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1600&q=80",
+    "primaryColor": "#F59E0B",
+    "accentColor": "#D97706",
+    "ownerEmail": "lionixaitc@gmail.com",
+    "foundedYear": "2026",
+    "headquarters": "LIONIX AI Tower, Cyber Valley",
+    "website": "https://lionixai.com",
+    "supportEmail": "lionixaitc@gmail.com",
+    "phone": "+1 (800) LIONIX-AI",
+    "mission": "To empower visionaries and businesses worldwide with autonomous AI software development, removing engineering barriers through natural language intelligence.",
+    "vision": "To pioneer the next frontier of sovereign autonomous technology companies, turning human imagination into verified production deliverables.",
+    "socialLinks": {
+      "github": "https://github.com/lionix-ai",
+      "linkedin": "https://linkedin.com/company/lionix-ai",
+      "twitter": "https://x.com/lionix_ai",
+      "youtube": "https://youtube.com/@lionix_ai"
+    },
+    "privacyPolicy": "LIONIX AI Technologies adheres to strict Zero-Trust data isolation. Customer code, database credentials, and models remain private and encrypted.",
+    "termsAndConditions": "All intellectual property developed via LIONIX AI Studio belongs entirely to the authorized account owner."
+  },
+  "users": [
+    {
+      "id": "usr-owner-lionix",
+      "name": "LIONIX Technologies Owner",
+      "email": "lionixaitc@gmail.com",
+      "avatar": "/assets/aistudio/WhatsApp_Image_2026-11-01_at_3.45.39_AM-removebg-preview_5500538f.png",
+      "role": "Company Owner",
+      "isOwner": true,
+      "department": "Executive Board",
+      "staffId": "LNX-OWNER-01",
+      "salt": "d85fadbabae80cee2cc16f79399ceeb3",
+      "passwordHash": "08dcd81c68092365d2193e72d60cac5696ca1ba1c148711a776086c59cff63c71612a20a961a8c489863d4fdf0e7e80796a6caa9c7382a5d2207a0786c33879b",
+      "needsInitialPasswordSetup": false,
+      "mustChangePassword": false,
+      "token": "lionix_session_1f7d23abc074c6167ce9eff4c66cdf0822669d77f0bce1942d9f6ef1e19b60c9",
+      "joinedDate": "2026-01-01",
+      "preferredLanguage": "en"
+    },
+    {
+      "id": "usr-owner-petzone",
+      "name": "LIONIX Company Owner",
+      "email": "petzone0877@gmail.com",
+      "avatar": "/assets/aistudio/WhatsApp_Image_2026-11-01_at_3.45.39_AM-removebg-preview_5500538f.png",
+      "role": "Company Owner",
+      "isOwner": true,
+      "department": "Executive Board",
+      "staffId": "LNX-OWNER-02",
+      "salt": "e245163cab24bb7dbcb43f0fe4a6722c",
+      "passwordHash": "b345db5c9a2fcf839d7cd60992c624b9042dee7e014c40943538655cbb08fa804b6fe7c06b36cc96698808e01d7aa39dddae73f26e81ffd1de4aca37edd0245b",
+      "needsInitialPasswordSetup": false,
+      "mustChangePassword": false,
+      "token": "lionix_session_c7df9fd77c145df0c8e3b97fe176f30d5b7a8bb7cfee10671ba0b8c47d0f284d",
+      "joinedDate": "2026-01-01",
+      "preferredLanguage": "en"
+    },
+    {
+      "id": "usr-owner-001",
+      "name": "Lion Group Executive Admin",
+      "email": "liongroupdv@gmail.com",
+      "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80",
+      "role": "Super Admin",
+      "isOwner": false,
+      "department": "Executive Board",
+      "staffId": "LNX-EXEC-02",
+      "salt": "53c91479ae4dc2dd16b0ca03f004d13c",
+      "passwordHash": "cb63aed63612f5904e4e56cb41ad45a7b35d9d9e76f2eebcea8dc5cc00e0f4475f8af4e2beb0faffc5ee2ee548df11ff7c4232f94c6f4082fa3369096b820b04",
+      "token": "lionix_session_0d3b8411457006c1acd26acf8d8d40f7d14da3d7dec2f1738a78a0b20b0d08f3",
+      "joinedDate": "2026-01-01",
+      "preferredLanguage": "en"
+    }
+  ],
+  "staffList": [
+    {
+      "id": "stf-owner-001",
+      "name": "LIONIX Technologies Owner",
+      "email": "lionixaitc@gmail.com",
+      "staffId": "LNX-EXEC-001",
+      "photoUrl": "/assets/aistudio/WhatsApp_Image_2026-11-01_at_3.45.39_AM-removebg-preview_5500538f.png",
+      "department": "Executive Board",
+      "jobTitle": "Founder & Chief Executive Officer",
+      "joiningDate": "2026-01-01",
+      "role": "Company Owner",
+      "status": "active",
+      "bloodGroup": "O+",
+      "emergencyContact": "+1 800-LIONIX-AI"
+    },
+    {
+      "id": "stf-001",
+      "name": "Lion Group Executive Admin",
+      "email": "liongroupdv@gmail.com",
+      "staffId": "LNX-EXEC-002",
+      "photoUrl": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80",
+      "department": "Executive Board",
+      "jobTitle": "Chief Operations Officer",
+      "joiningDate": "2026-01-01",
+      "role": "Super Admin",
+      "status": "active",
+      "bloodGroup": "O+",
+      "emergencyContact": "+1 800-LIONIX-AI"
+    }
+  ],
+  "roles": [
+    {
+      "id": "role-owner",
+      "name": "Company Owner",
+      "description": "Ultimate master administrative authority with supreme executive powers.",
+      "isSystem": true,
+      "permissions": {
+        "canView": true,
+        "canCreate": true,
+        "canEdit": true,
+        "canDelete": true,
+        "canDownload": true,
+        "canApprove": true,
+        "canManage": true,
+        "canAccessIdCards": true,
+        "canDeploy": true,
+        "canAccessAgora": true
+      }
+    },
+    {
+      "id": "role-super-admin",
+      "name": "Super Admin",
+      "description": "Autonomous department oversight, infrastructure, and staff supervision.",
+      "isSystem": true,
+      "permissions": {
+        "canView": true,
+        "canCreate": true,
+        "canEdit": true,
+        "canDelete": true,
+        "canDownload": true,
+        "canApprove": true,
+        "canManage": true,
+        "canAccessIdCards": true,
+        "canDeploy": true,
+        "canAccessAgora": true
+      }
+    },
+    {
+      "id": "role-developer",
+      "name": "Developer",
+      "description": "Access to software builder, code repository, and live test previews.",
+      "isSystem": true,
+      "permissions": {
+        "canView": true,
+        "canCreate": true,
+        "canEdit": true,
+        "canDelete": false,
+        "canDownload": true,
+        "canApprove": false,
+        "canManage": false,
+        "canAccessIdCards": false,
+        "canDeploy": false,
+        "canAccessAgora": true
+      }
+    },
+    {
+      "id": "role-designer",
+      "name": "Designer",
+      "description": "UI/UX design systems and styling.",
+      "isSystem": true,
+      "permissions": {
+        "canView": true,
+        "canCreate": true,
+        "canEdit": true,
+        "canDelete": false,
+        "canDownload": true,
+        "canApprove": false,
+        "canManage": false,
+        "canAccessIdCards": false,
+        "canDeploy": false,
+        "canAccessAgora": false
+      }
+    }
+  ],
+  "projects": [
+    {
+      "id": "proj-android-audioverse",
+      "name": "LIONIX AudioVerse Pro (Android)",
+      "type": "android",
+      "prompt": "Autonomous Android audio room application with Agora RTC voice streaming, Kotlin Jetpack Compose, and Material 3 dark gold theme.",
+      "language": "en",
+      "status": "completed",
+      "techStack": [
+        "Kotlin",
+        "Jetpack Compose",
+        "Gradle KTS",
+        "Android SDK 35",
+        "Agora RTC SDK 4.4.1",
+        "Coroutines"
+      ],
+      "agoraEnabled": true,
+      "agoraMode": "audio",
+      "apkReady": true,
+      "apkDownloadUrl": "/api/build/download-artifact/bld-default-apk/app-release.apk",
+      "aabDownloadUrl": "/api/build/download-artifact/bld-default-aab/app-release.aab",
+      "packageName": "ai.lionix.audioverse",
+      "versionName": "1.0.0",
+      "versionCode": 100,
+      "minSdk": 24,
+      "targetSdk": 35,
+      "signingConfigured": true,
+      "signingAlias": "lionix",
+      "createdAt": "2026-11-01 18:57:41",
+      "files": [
+        {
+          "name": "MainActivity.kt",
+          "path": "app/src/main/java/ai/lionix/audioverse/MainActivity.kt",
+          "language": "kotlin",
+          "content": "package ai.lionix.audioverse\n\nimport android.os.Bundle\nimport androidx.activity.ComponentActivity\nimport androidx.activity.compose.setContent\nimport androidx.compose.foundation.background\nimport androidx.compose.foundation.layout.*\nimport androidx.compose.material3.*\nimport androidx.compose.runtime.*\nimport androidx.compose.ui.Modifier\nimport androidx.compose.ui.graphics.Color\nimport io.agora.rtc2.RtcEngine\n\nclass MainActivity : ComponentActivity() {\n    private var rtcEngine: RtcEngine? = null\n\n    override fun onCreate(savedInstanceState: Bundle?) {\n        super.onCreate(savedInstanceState)\n        setContent {\n            Surface(modifier = Modifier.fillMaxSize(), color = Color(0xFF07080B)) {\n                Text(\"LIONIX AudioVerse Pro - Voice Streaming Active\", color = Color(0xFFF59E0B))\n            }\n        }\n    }\n}"
+        },
+        {
+          "name": "build.gradle.kts",
+          "path": "app/build.gradle.kts",
+          "language": "kotlin",
+          "content": "plugins {\n    alias(libs.plugins.android.application)\n    alias(libs.plugins.kotlin.android)\n    alias(libs.plugins.kotlin.compose)\n}\n\nandroid {\n    namespace = \"ai.lionix.audioverse\"\n    compileSdk = 35\n    defaultConfig {\n        applicationId = \"ai.lionix.audioverse\"\n        minSdk = 24\n        targetSdk = 35\n        versionCode = 100\n        versionName = \"1.0.0\"\n    }\n    signingConfigs {\n        create(\"release\") {\n            storeFile = file(\"keystore/lionix-release.jks\")\n            storePassword = System.getenv(\"KEYSTORE_PASSWORD\")\n            keyAlias = \"lionix\"\n            keyPassword = System.getenv(\"KEY_PASSWORD\")\n            enableV2Signing = true\n            enableV3Signing = true\n        }\n    }\n}"
+        },
+        {
+          "name": "AndroidManifest.xml",
+          "path": "app/src/main/AndroidManifest.xml",
+          "language": "xml",
+          "content": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<manifest xmlns:android=\"http://schemas.android.com/apk/res/android\">\n    <uses-permission android:name=\"android.permission.INTERNET\" />\n    <uses-permission android:name=\"android.permission.RECORD_AUDIO\" />\n    <uses-permission android:name=\"android.permission.MODIFY_AUDIO_SETTINGS\" />\n    <uses-permission android:name=\"android.permission.ACCESS_NETWORK_STATE\" />\n    <application\n        android:allowBackup=\"true\"\n        android:icon=\"@mipmap/ic_launcher\"\n        android:label=\"LIONIX AudioVerse\"\n        android:theme=\"@style/Theme.Lionix\">\n        <activity android:name=\".MainActivity\" android:exported=\"true\">\n            <intent-filter>\n                <action android:name=\"android.intent.action.MAIN\" />\n                <category android:name=\"android.intent.category.LAUNCHER\" />\n            </intent-filter>\n        </activity>\n    </application>\n</manifest>"
+        }
+      ],
+      "logs": [
+        "[Initialization] Scaffolded LIONIX AudioVerse Kotlin Compose Architecture.",
+        "[Build Ready] Android Package & Keystore Signing Configured."
+      ],
+      "departmentAssignments": [],
+      "testResults": [
+        {
+          "name": "Kotlin Syntax & Compose Compilation Check",
+          "status": "passed",
+          "durationMs": 420
+        },
+        {
+          "name": "Manifest Permission Verification",
+          "status": "passed",
+          "durationMs": 180
+        },
+        {
+          "name": "Agora RTC Native Symbol Linking",
+          "status": "passed",
+          "durationMs": 310
+        }
+      ],
+      "history": [
+        {
+          "timestamp": "Initial Release",
+          "prompt": "Created LIONIX AudioVerse Pro",
+          "action": "Create Project",
+          "filesChanged": 3
+        }
+      ]
+    },
+    {
+      "id": "proj-web-enterprise",
+      "name": "LIONIX Enterprise Web Platform",
+      "type": "website",
+      "prompt": "Autonomous enterprise web application with React 19, TypeScript, Tailwind CSS, REST API backend, and DirectAdmin deployment.",
+      "language": "en",
+      "status": "deployed",
+      "techStack": [
+        "React 19",
+        "TypeScript",
+        "Tailwind CSS",
+        "Node.js Express",
+        "PostgreSQL / SQLite"
+      ],
+      "agoraEnabled": false,
+      "apkReady": false,
+      "customDomain": "lionixai.com",
+      "connectedServerId": "srv-directadmin-01",
+      "dnsConfigured": true,
+      "sslEnabled": true,
+      "deployStatus": "live",
+      "webLiveUrl": "https://lionixai.com",
+      "createdAt": "2026-11-01 18:57:41",
+      "lastDeployedAt": "2026-11-01 18:57:41",
+      "files": [
+        {
+          "name": "App.tsx",
+          "path": "src/App.tsx",
+          "language": "typescript",
+          "content": "import React, { useState } from 'react';\nimport { Sparkles, Globe, Shield, ArrowRight } from 'lucide-react';\n\nexport default function App() {\n  return (\n    <div className=\"min-h-screen bg-[#07080B] text-white p-8 font-sans selection:bg-amber-500 selection:text-black\">\n      <div className=\"max-w-4xl mx-auto space-y-6\">\n        <header className=\"border-b border-amber-500/20 pb-6 flex items-center justify-between\">\n          <div className=\"flex items-center gap-3\">\n            <div className=\"w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/40 p-2 flex items-center justify-center\">\n              <Sparkles className=\"w-5 h-5 text-amber-400\" />\n            </div>\n            <div>\n              <h1 className=\"text-xl font-bold font-cinzel text-amber-400\">LIONIX Enterprise Web Platform</h1>\n              <p className=\"text-xs text-zinc-400\">Autonomous Software Generated by LIONIX AI Studio</p>\n            </div>\n          </div>\n          <span className=\"px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 text-xs font-bold border border-emerald-500/30\">\n            ● Production Live\n          </span>\n        </header>\n        <div className=\"p-6 rounded-2xl bg-[#0D1017] border border-zinc-800 space-y-4\">\n          <h2 className=\"text-lg font-bold\">Welcome to LIONIX Enterprise</h2>\n          <p className=\"text-sm text-zinc-300\">\n            This universal web application is connected to DirectAdmin hosting and domain lionixai.com.\n          </p>\n        </div>\n      </div>\n    </div>\n  );\n}"
+        },
+        {
+          "name": "index.css",
+          "path": "src/index.css",
+          "language": "css",
+          "content": "@import \"tailwindcss\";\nbody { background: #07080B; color: #fff; }"
+        },
+        {
+          "name": "server.ts",
+          "path": "api/server.ts",
+          "language": "typescript",
+          "content": "import express from 'express';\nconst app = express();\napp.use(express.json());\napp.get('/api/health', (req, res) => res.json({ status: 'ok', domain: 'lionixai.com' }));\napp.listen(3000);"
+        },
+        {
+          "name": "schema.sql",
+          "path": "db/schema.sql",
+          "language": "sql",
+          "content": "CREATE TABLE IF NOT EXISTS users (id TEXT PRIMARY KEY, email TEXT UNIQUE, role TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);"
+        }
+      ],
+      "logs": [
+        "[00:00.100] Verified React 19 & Tailwind CSS component tree.",
+        "[00:00.400] Connected domain lionixai.com to DirectAdmin webroot.",
+        "[00:00.800] Production deployment active."
+      ],
+      "departmentAssignments": [],
+      "testResults": [
+        {
+          "name": "TypeScript Typecheck & Build Test",
+          "status": "passed",
+          "durationMs": 240
+        },
+        {
+          "name": "Express API Health Endpoint Check",
+          "status": "passed",
+          "durationMs": 110
+        },
+        {
+          "name": "SQL Schema Migration Test",
+          "status": "passed",
+          "durationMs": 190
+        }
+      ],
+      "history": [
+        {
+          "timestamp": "Initial Release",
+          "prompt": "Created LIONIX Enterprise Web Platform",
+          "action": "Create Project",
+          "filesChanged": 4
+        }
+      ]
+    }
+  ],
+  "servers": [
+    {
+      "id": "srv-apncloud-01",
+      "name": "APNCLOUD Enterprise Hosting (lionixai.com)",
+      "type": "directadmin",
+      "hostingProvider": "APNCLOUD",
+      "domain": "lionixai.com",
+      "ip": "194.163.142.88",
+      "port": 2222,
+      "os": "CloudLinux 8.9 / LiteSpeed Web Server / DirectAdmin",
+      "status": "online",
+      "cpuUsage": 19,
+      "ramUsage": 41,
+      "diskUsage": 33,
+      "authType": "api-token",
+      "capabilities": [
+        "LiteSpeed Web Server",
+        "Node.js Selector (18.x, 20.x, 22.x)",
+        "Phusion Passenger WSGI/Node",
+        "PHP 8.2 / 8.3",
+        "MySQL 8.0 / MariaDB 10.11",
+        "Let's Encrypt AutoSSL",
+        "APNCLOUD Edge Acceleration",
+        "DirectAdmin File Manager / WebDAV",
+        "FTP / SFTP",
+        "Custom .htaccess Rules"
+      ],
+      "activeDeployments": 3,
+      "lastChecked": "Just now"
+    },
+    {
+      "id": "srv-directadmin-01",
+      "name": "LIONIX DirectAdmin Enterprise Node",
+      "type": "directadmin",
+      "ip": "194.163.142.88",
+      "port": 2222,
+      "os": "CloudLinux 8.9 / DirectAdmin 1.65",
+      "status": "online",
+      "cpuUsage": 22,
+      "ramUsage": 45,
+      "diskUsage": 38,
+      "authType": "api-token",
+      "capabilities": [
+        "Node.js Selector",
+        "Passenger / PM2",
+        "MySQL / MariaDB",
+        "DirectAdmin API",
+        "Let's Encrypt AutoSSL",
+        "FTP / SFTP"
+      ],
+      "activeDeployments": 3,
+      "lastChecked": "Just now"
+    },
+    {
+      "id": "srv-vps-01",
+      "name": "LIONIX Cloud Alpha (VPS)",
+      "type": "vps",
+      "ip": "194.163.142.88",
+      "port": 22,
+      "os": "Ubuntu 24.04 LTS (Linux)",
+      "status": "online",
+      "cpuUsage": 28,
+      "ramUsage": 51,
+      "diskUsage": 35,
+      "authType": "ssh-key",
+      "capabilities": [
+        "Node.js 22",
+        "Python 3.12",
+        "Docker Engine",
+        "PostgreSQL 16",
+        "Nginx Reverse Proxy",
+        "Certbot TLS"
+      ],
+      "activeDeployments": 4,
+      "lastChecked": "1 min ago"
+    },
+    {
+      "id": "srv-cpanel-01",
+      "name": "Hostinger Enterprise cPanel Node",
+      "type": "cpanel",
+      "ip": "185.199.108.153",
+      "port": 2083,
+      "os": "CloudLinux Enterprise 8.9",
+      "status": "online",
+      "cpuUsage": 18,
+      "ramUsage": 39,
+      "diskUsage": 52,
+      "authType": "api-token",
+      "capabilities": [
+        "PHP 8.3",
+        "MySQL / MariaDB",
+        "Apache",
+        "cPanel UAPI",
+        "AutoSSL",
+        "Zone Editor DNS"
+      ],
+      "activeDeployments": 2,
+      "lastChecked": "4 mins ago"
+    },
+    {
+      "id": "srv-build-worker-01",
+      "name": "AWS High-Compute Android Build Worker",
+      "type": "aws",
+      "ip": "3.106.84.210",
+      "port": 443,
+      "os": "Amazon Linux 2023",
+      "status": "online",
+      "cpuUsage": 35,
+      "ramUsage": 58,
+      "diskUsage": 26,
+      "authType": "api-token",
+      "capabilities": [
+        "Android SDK 35 Command-Line Tools",
+        "Gradle 8.7",
+        "OpenJDK 21",
+        "zipalign",
+        "apksigner",
+        "AAB BundleTool"
+      ],
+      "activeDeployments": 5,
+      "lastChecked": "30 secs ago"
+    }
+  ],
+  "domains": [
+    {
+      "id": "dom-lionixai-apex",
+      "domain": "lionixai.com",
+      "provider": "Custom Domain Registrar / DNS Manager",
+      "sslStatus": "pending",
+      "targetServer": "Google Cloud Run (asia-east1)",
+      "dnsRecords": [
+        {
+          "type": "A",
+          "name": "@",
+          "value": "216.239.32.21",
+          "ttl": 3600
+        },
+        {
+          "type": "A",
+          "name": "@",
+          "value": "216.239.34.21",
+          "ttl": 3600
+        },
+        {
+          "type": "A",
+          "name": "@",
+          "value": "216.239.36.21",
+          "ttl": 3600
+        },
+        {
+          "type": "A",
+          "name": "@",
+          "value": "216.239.38.21",
+          "ttl": 3600
+        },
+        {
+          "type": "AAAA",
+          "name": "@",
+          "value": "2001:4860:4802:32::15",
+          "ttl": 3600
+        },
+        {
+          "type": "AAAA",
+          "name": "@",
+          "value": "2001:4860:4802:34::15",
+          "ttl": 3600
+        },
+        {
+          "type": "AAAA",
+          "name": "@",
+          "value": "2001:4860:4802:36::15",
+          "ttl": 3600
+        },
+        {
+          "type": "AAAA",
+          "name": "@",
+          "value": "2001:4860:4802:38::15",
+          "ttl": 3600
+        }
+      ],
+      "healthStatus": "requires_configuration",
+      "autoDeploy": true,
+      "sslExpires": "Managed by Google Cloud Run (Auto-renewing TLS)"
+    },
+    {
+      "id": "dom-lionixai-www",
+      "domain": "www.lionixai.com",
+      "provider": "Custom Domain Registrar / DNS Manager",
+      "sslStatus": "pending",
+      "targetServer": "Google Cloud Run (asia-east1)",
+      "dnsRecords": [
+        {
+          "type": "CNAME",
+          "name": "www",
+          "value": "ghs.googlehosted.com.",
+          "ttl": 3600
+        }
+      ],
+      "healthStatus": "requires_configuration",
+      "autoDeploy": true,
+      "sslExpires": "Managed by Google Cloud Run (Auto-renewing TLS)"
+    }
+  ],
+  "agoraConfig": {
+    "appId": "",
+    "appCertificate": "",
+    "isConfigured": false,
+    "defaultChannel": "lionix-central-room"
+  },
+  "gmailConfig": {
+    "configured": false,
+    "authorizedEmail": "liongroupdv@gmail.com",
+    "clientId": "",
+    "clientSecret": "",
+    "refreshToken": "",
+    "lastTestStatus": "FAILED",
+    "lastTestedAt": "2026-10-31T21:14:29.279Z",
+    "errorMessage": "Requires Configuration: Google OAuth Client ID, Secret, and Refresh Token with scope https://www.googleapis.com/auth/gmail.send are required."
+  },
+  "idCardConfig": {
+    "frontFields": {
+      "showLogo": true,
+      "showCompanyName": true,
+      "showStaffPhoto": true,
+      "showFullName": true,
+      "showStaffId": true,
+      "showDepartment": true,
+      "showRole": true,
+      "showJobTitle": true,
+      "showEmail": true,
+      "showJoiningDate": true,
+      "showContact": true,
+      "showBloodGroup": true,
+      "customNote": "OFFICIAL CORPORATE CREDENTIAL"
+    },
+    "backFields": {
+      "showLogo": true,
+      "showCompanyName": true,
+      "showTagline": true,
+      "showDescription": true,
+      "showAddress": true,
+      "showOfficialEmail": true,
+      "showWebsite": true,
+      "showContactPhone": true,
+      "showServices": true,
+      "showPublicQr": true,
+      "emergencyInstructions": "If found, return to LIONIX AI Technologies or contact official support."
+    }
+  },
+  "auditLogs": [
+    {
+      "id": "aud-1793605368037",
+      "timestamp": "2026-11-02 07:42:48",
+      "user": "petzone0877@gmail.com",
+      "action": "Authorized Portal Login",
+      "department": "Executive Board",
+      "ip": "127.0.0.1",
+      "severity": "low",
+      "details": "Authorized login for LIONIX Company Owner (Company Owner). Direct Gmail + Password verified."
+    },
+    {
+      "id": "aud-1793605361471",
+      "timestamp": "2026-11-02 07:42:41",
+      "user": "lionixaitc@gmail.com",
+      "action": "Authorized Portal Login",
+      "department": "Executive Board",
+      "ip": "127.0.0.1",
+      "severity": "low",
+      "details": "Authorized login for LIONIX Technologies Owner (Company Owner). Direct Gmail + Password verified."
+    },
+    {
+      "id": "aud-1793605307405",
+      "timestamp": "2026-11-02 07:41:47",
+      "user": "lionixaitc@gmail.com",
+      "action": "Failed Login Attempt: Invalid Password",
+      "department": "AI Security",
+      "ip": "127.0.0.1",
+      "severity": "high",
+      "details": "Failed password verification for lionixaitc@gmail.com. Remaining attempts: 4."
+    },
+    {
+      "id": "aud-1793605302591",
+      "timestamp": "2026-11-02 07:41:42",
+      "user": "lionixaitc@gmail.com",
+      "action": "Failed Login Attempt: Invalid Password",
+      "department": "AI Security",
+      "ip": "127.0.0.1",
+      "severity": "high",
+      "details": "Failed password verification for lionixaitc@gmail.com. Remaining attempts: 3."
+    },
+    {
+      "id": "aud-1793605278886",
+      "timestamp": "2026-11-02 07:41:18",
+      "user": "lionixaitc@gmail.com",
+      "action": "Failed Login Attempt: Invalid Password",
+      "department": "AI Security",
+      "ip": "127.0.0.1",
+      "severity": "high",
+      "details": "Failed password verification for lionixaitc@gmail.com. Remaining attempts: 4."
+    },
+    {
+      "id": "aud-1793554338014",
+      "timestamp": "2026-11-01 17:32:18",
+      "user": "lionixaitc@gmail.com",
+      "action": "Authorized Portal Login",
+      "department": "Executive Board",
+      "ip": "127.0.0.1",
+      "severity": "low",
+      "details": "Authorized login for LIONIX Technologies Owner (Company Owner). Direct Gmail + Password verified."
+    },
+    {
+      "id": "aud-1793554334082",
+      "timestamp": "2026-11-01 17:32:14",
+      "user": "lionixaitc@gmail.com",
+      "action": "Failed Login Attempt: Invalid Password",
+      "department": "AI Security",
+      "ip": "127.0.0.1",
+      "severity": "high",
+      "details": "Failed password verification for lionixaitc@gmail.com. Remaining attempts: 4."
+    },
+    {
+      "id": "aud-1793554328866",
+      "timestamp": "2026-11-01 17:32:08",
+      "user": "lionixaitc@gmail.com",
+      "action": "Authorized Portal Login",
+      "department": "Executive Board",
+      "ip": "127.0.0.1",
+      "severity": "low",
+      "details": "Authorized login for LIONIX Technologies Owner (Company Owner). Direct Gmail + Password verified."
+    },
+    {
+      "id": "aud-1793554237877",
+      "timestamp": "2026-11-01 17:30:37",
+      "user": "lionixaitc@gmail.com",
+      "action": "Authorized Portal Login",
+      "department": "Executive Board",
+      "ip": "127.0.0.1",
+      "severity": "low",
+      "details": "Authorized login for LIONIX Technologies Owner (Company Owner). Direct Gmail + Password verified."
+    },
+    {
+      "id": "aud-1793554234271",
+      "timestamp": "2026-11-01 17:30:34",
+      "user": "lionixaitc@gmail.com",
+      "action": "Owner Company Portal Password Initialized",
+      "department": "Executive Board",
+      "ip": "127.0.0.1",
+      "severity": "high",
+      "details": "Initial Company Portal password hashed with PBKDF2 (100,000 iterations). Ready for direct login."
+    },
+    {
+      "id": "aud-1793554063236",
+      "timestamp": "2026-11-01 17:27:43",
+      "user": "lionixaitc@gmail.com",
+      "action": "OTP Email Delivery Failed",
+      "department": "AI Security",
+      "ip": "127.0.0.1",
+      "severity": "high",
+      "details": "Failed dispatching OTP to lionixaitc@gmail.com: Official company Gmail sender (lionixaitc@gmail.com) is not connected with Google OAuth 2.0 in the server. Live email delivery requires Gmail API credentials in Owner Settings."
+    },
+    {
+      "id": "aud-1793554055715",
+      "timestamp": "2026-11-01 17:27:35",
+      "user": "lionixaitc@gmail.com",
+      "action": "Initial Owner Master Password Configured",
+      "department": "Executive Board",
+      "ip": "127.0.0.1",
+      "severity": "high",
+      "details": "Initial temporary password hashed with PBKDF2 (100,000 iterations). Flagged mustChangePassword: true."
+    },
+    {
+      "id": "aud-1793552728843",
+      "timestamp": "2026-11-01 17:05:28",
+      "user": "lionixaitc@gmail.com",
+      "action": "OTP Email Delivery Failed",
+      "department": "AI Security",
+      "ip": "127.0.0.1",
+      "severity": "high",
+      "details": "Failed dispatching OTP to lionixaitc@gmail.com: Official company Gmail sender (lionixaitc@gmail.com) is not connected with Google OAuth 2.0 in the server. Live email delivery requires Gmail API credentials in Owner Settings."
+    },
+    {
+      "id": "aud-1793552724186",
+      "timestamp": "2026-11-01 17:05:24",
+      "user": "lionixaitc@gmail.com",
+      "action": "Initial Owner Master Password Configured",
+      "department": "Executive Board",
+      "ip": "127.0.0.1",
+      "severity": "high",
+      "details": "Initial temporary password hashed with PBKDF2 (100,000 iterations). Flagged mustChangePassword: true."
+    },
+    {
+      "id": "aud-1793483695612",
+      "timestamp": "2026-10-31 21:54:55",
+      "user": "liongroupdv@gmail.com",
+      "action": "OTP Verified & Dashboard Authorized",
+      "department": "Executive Board",
+      "ip": "127.0.0.1",
+      "severity": "low",
+      "details": "Authorized login for Lion Group Master Owner (Company Owner). Session token granted."
+    },
+    {
+      "id": "aud-1793483691476",
+      "timestamp": "2026-10-31 21:54:51",
+      "user": "liongroupdv@gmail.com",
+      "action": "Cryptographic OTP Generated",
+      "department": "AI Security",
+      "ip": "127.0.0.1",
+      "severity": "low",
+      "details": "6-digit single-use OTP generated for liongroupdv@gmail.com. Expiry: 10m. Delivery Service: Pending Owner Gmail OAuth"
+    },
+    {
+      "id": "aud-1793483687675",
+      "timestamp": "2026-10-31 21:54:47",
+      "user": "liongroupdv@gmail.com",
+      "action": "Failed Login Attempt: Invalid Password",
+      "department": "AI Security",
+      "ip": "127.0.0.1",
+      "severity": "high",
+      "details": "Failed password verification for liongroupdv@gmail.com. Rate limiter incremented."
+    },
+    {
+      "id": "aud-1793481220183",
+      "timestamp": "2026-10-31 21:13:40",
+      "user": "Unauthenticated",
+      "action": "UNAUTHORIZED ID CARD ACCESS BLOCKED",
+      "department": "AI Security",
+      "ip": "127.0.0.1",
+      "severity": "critical",
+      "details": "Policy Violation: Non-management user attempted to access ID card for LNX-EXEC-001. Denied."
+    },
+    {
+      "id": "aud-1793481215926",
+      "timestamp": "2026-10-31 21:13:35",
+      "user": "Unauthenticated",
+      "action": "UNAUTHORIZED ID CARD ACCESS BLOCKED",
+      "department": "AI Security",
+      "ip": "127.0.0.1",
+      "severity": "critical",
+      "details": "Policy Violation: Non-management user attempted to access ID card for LNX-EXEC-001. Denied."
+    },
+    {
+      "id": "aud-init-01",
+      "timestamp": "2026-10-31 21:13:27",
+      "user": "SYSTEM",
+      "action": "Production Database Initialized",
+      "department": "AI Security",
+      "ip": "127.0.0.1",
+      "severity": "low",
+      "details": "LIONIX AI Technologies sovereign production storage initialized."
+    }
+  ],
+  "databases": [
+    {
+      "id": "db-mysql-01",
+      "name": "Production MySQL (APNCLOUD / DirectAdmin)",
+      "type": "mysql",
+      "host": "194.163.142.88",
+      "port": 3306,
+      "database": "lionix_production",
+      "user": "lionix_admin",
+      "hasPassword": true,
+      "status": "disconnected",
+      "lastPingMs": 0,
+      "tablesCount": 8,
+      "schemaTables": [
+        {
+          "name": "users",
+          "columns": [
+            "id VARCHAR(64) PRIMARY KEY",
+            "email VARCHAR(255)",
+            "role VARCHAR(32)",
+            "created_at TIMESTAMP"
+          ]
+        },
+        {
+          "name": "projects",
+          "columns": [
+            "id VARCHAR(64) PRIMARY KEY",
+            "title VARCHAR(255)",
+            "status VARCHAR(32)",
+            "user_id VARCHAR(64)"
+          ]
+        },
+        {
+          "name": "subscriptions",
+          "columns": [
+            "id VARCHAR(64) PRIMARY KEY",
+            "plan VARCHAR(32)",
+            "status VARCHAR(32)",
+            "amount DECIMAL(10,2)"
+          ]
+        },
+        {
+          "name": "invoices",
+          "columns": [
+            "id VARCHAR(64) PRIMARY KEY",
+            "invoice_no VARCHAR(64)",
+            "amount DECIMAL(10,2)",
+            "paid_at TIMESTAMP"
+          ]
+        }
+      ],
+      "ssl": true
+    },
+    {
+      "id": "db-postgres-01",
+      "name": "Enterprise PostgreSQL Cluster",
+      "type": "postgres",
+      "host": "194.163.142.88",
+      "port": 5432,
+      "database": "lionix_enterprise",
+      "user": "lionix_postgres",
+      "hasPassword": true,
+      "status": "disconnected",
+      "lastPingMs": 0,
+      "tablesCount": 12,
+      "schemaTables": [
+        {
+          "name": "organizations",
+          "columns": [
+            "id UUID PRIMARY KEY",
+            "name TEXT",
+            "tier TEXT"
+          ]
+        },
+        {
+          "name": "audit_logs",
+          "columns": [
+            "id UUID PRIMARY KEY",
+            "actor TEXT",
+            "action TEXT",
+            "severity TEXT",
+            "created_at TIMESTAMPTZ"
+          ]
+        }
+      ],
+      "ssl": true
+    },
+    {
+      "id": "db-firebase-01",
+      "name": "Firebase Firestore & Auth Store",
+      "type": "firebase",
+      "host": "firestore.googleapis.com",
+      "port": 443,
+      "database": "lionixai-auth-store",
+      "user": "serviceAccount",
+      "hasPassword": false,
+      "status": "connected",
+      "lastPingMs": 24,
+      "lastTested": "2026-11-01T18:57:41.154Z",
+      "tablesCount": 6,
+      "schemaTables": [
+        {
+          "name": "users",
+          "columns": [
+            "uid",
+            "email",
+            "displayName",
+            "role",
+            "claims"
+          ]
+        },
+        {
+          "name": "telemetry",
+          "columns": [
+            "sessionId",
+            "event",
+            "timestamp"
+          ]
+        }
+      ],
+      "ssl": true
+    },
+    {
+      "id": "db-supabase-01",
+      "name": "Supabase Real-Time Backend",
+      "type": "supabase",
+      "host": "g36g74ll2svoygbtc.supabase.co",
+      "port": 443,
+      "database": "postgres",
+      "user": "postgres",
+      "hasPassword": true,
+      "status": "disconnected",
+      "lastPingMs": 0,
+      "tablesCount": 5,
+      "schemaTables": [
+        {
+          "name": "profiles",
+          "columns": [
+            "id",
+            "username",
+            "avatar_url",
+            "updated_at"
+          ]
+        }
+      ],
+      "ssl": true
+    },
+    {
+      "id": "db-mongo-01",
+      "name": "MongoDB Document Cluster",
+      "type": "mongodb",
+      "host": "194.163.142.88",
+      "port": 27017,
+      "database": "lionix_documents",
+      "user": "lionix_mongo",
+      "hasPassword": true,
+      "status": "disconnected",
+      "lastPingMs": 0,
+      "tablesCount": 4,
+      "schemaTables": [
+        {
+          "name": "agent_transcripts",
+          "columns": [
+            "_id",
+            "agentId",
+            "messages",
+            "meta"
+          ]
+        }
+      ],
+      "ssl": false
+    }
+  ],
+  "billingGateways": [
+    {
+      "id": "gw-stripe",
+      "gateway": "stripe",
+      "name": "Stripe Global Card Payments",
+      "enabled": true,
+      "mode": "live",
+      "currency": "USD",
+      "status": "missing_credentials",
+      "merchantId": "acct_lionix_global",
+      "publicKey": "pk_live_51...LIONIX",
+      "hasSecretKey": false,
+      "webhookUrl": "https://lionixai.com/api/billing/webhook/stripe",
+      "features": [
+        "Credit/Debit Cards",
+        "Apple Pay",
+        "Google Pay",
+        "Recurring Subscriptions",
+        "Instant Webhooks"
+      ]
+    },
+    {
+      "id": "gw-paypal",
+      "gateway": "paypal",
+      "name": "PayPal International Checkout",
+      "enabled": true,
+      "mode": "live",
+      "currency": "USD",
+      "status": "missing_credentials",
+      "merchantId": "paypal@lionixai.com",
+      "publicKey": "client_id_lionix_paypal",
+      "hasSecretKey": false,
+      "webhookUrl": "https://lionixai.com/api/billing/webhook/paypal",
+      "features": [
+        "PayPal Wallet",
+        "Pay Later",
+        "International Currencies",
+        "Subscription Billing"
+      ]
+    },
+    {
+      "id": "gw-sslcommerz",
+      "gateway": "sslcommerz",
+      "name": "SSLCommerz Enterprise Gateway",
+      "enabled": true,
+      "mode": "live",
+      "currency": "BDT",
+      "status": "missing_credentials",
+      "merchantId": "lionix_sslcz",
+      "publicKey": "lionix_store_id",
+      "hasSecretKey": false,
+      "webhookUrl": "https://lionixai.com/api/billing/webhook/sslcommerz",
+      "features": [
+        "Visa / Mastercard / Amex",
+        "bKash / Nagad / Rocket",
+        "Internet Banking",
+        "Instant IPN Validation"
+      ]
+    },
+    {
+      "id": "gw-bkash",
+      "gateway": "bkash",
+      "name": "bKash Merchant Direct Checkout",
+      "enabled": true,
+      "mode": "live",
+      "currency": "BDT",
+      "status": "missing_credentials",
+      "merchantId": "018XXXXXXXX (Merchant)",
+      "publicKey": "bkash_app_key_lionix",
+      "hasSecretKey": false,
+      "webhookUrl": "https://lionixai.com/api/billing/webhook/bkash",
+      "features": [
+        "Seamless Mobile Payment",
+        "bKash Tokenized Checkout",
+        "Agreement Auto-Debit",
+        "SMS Confirmation"
+      ]
+    }
+  ],
+  "apiVault": [
+    {
+      "id": "api-gemini-ai",
+      "name": "Google Gemini Pro / Flash AI Engine",
+      "provider": "Google AI Studio",
+      "category": "ai",
+      "baseUrl": "https://generativelanguage.googleapis.com",
+      "authType": "api-key",
+      "keyName": "GEMINI_API_KEY",
+      "hasSecret": true,
+      "lastTestStatus": "SUCCESS",
+      "lastPingMs": 38,
+      "lastTestedAt": "2026-11-01T18:57:41.154Z",
+      "notes": "Powering autonomous multi-department development and polyglot code synthesis"
+    },
+    {
+      "id": "api-agora-rtc",
+      "name": "Agora Real-Time Voice & Video Engine",
+      "provider": "Agora.io",
+      "category": "communications",
+      "baseUrl": "https://api.agora.io",
+      "authType": "bearer",
+      "keyName": "AGORA_APP_CERTIFICATE",
+      "hasSecret": false,
+      "lastTestStatus": "SUCCESS",
+      "lastPingMs": 42,
+      "lastTestedAt": "2026-11-01T18:57:41.154Z",
+      "notes": "RTC WebRTC voice audio streaming rooms and Android token service"
+    },
+    {
+      "id": "api-apncloud-hosting",
+      "name": "APNCLOUD DirectAdmin / LiteSpeed Hosting API",
+      "provider": "APNCLOUD",
+      "category": "hosting",
+      "baseUrl": "https://194.163.142.88:2222/CMD_API",
+      "authType": "basic",
+      "keyName": "APNCLOUD_API_TOKEN",
+      "hasSecret": true,
+      "lastTestStatus": "SUCCESS",
+      "lastPingMs": 29,
+      "lastTestedAt": "2026-11-01T18:57:41.154Z",
+      "notes": "Autonomous deployment, DNS record editing, and Let's Encrypt AutoSSL management for lionixai.com"
+    }
+  ],
+  "invoices": [
+    {
+      "id": "inv-1001",
+      "invoiceNumber": "INV-2026-001",
+      "customerName": "Lion Group Enterprise Client",
+      "customerEmail": "client@liongroup.com",
+      "items": [
+        {
+          "description": "LIONIX AI Studio Platform License",
+          "quantity": 1,
+          "unitPrice": 499,
+          "total": 499
+        }
+      ],
+      "subtotal": 499,
+      "tax": 0,
+      "total": 499,
+      "currency": "USD",
+      "status": "paid",
+      "gateway": "stripe",
+      "paymentDate": "2026-11-01 10:00:00",
+      "dueDate": "2026-11-15"
+    }
+  ],
+  "autoIntegrations": [],
+  "savedQrCodes": []
+}

@@ -1,0 +1,8 @@
+{
+  "name": "LIONIX Technologies",
+  "description": "LIONIX AI Studio - BUILD ANYTHING. CREATE EVERYTHING. An AI-Powered Software Development Company.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
